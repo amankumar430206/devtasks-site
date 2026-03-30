@@ -1,1713 +1,2266 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>DevTasks — Tasks that live inside your code.</title>
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Berkeley+Mono&family=Bricolage+Grotesque:opsz,wght@12..96,300;12..96,400;12..96,500;12..96,700;12..96,800&family=Geist+Mono:wght@300;400;500&display=swap" rel="stylesheet" />
-<style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-  :root {
-    --bg: #0D1117;
-    --bg-2: #0f1318;
-    --surface: #161b22;
-    --surface-2: #1c2128;
-    --border: #21262d;
-    --border-bright: #30363d;
-    --primary: #58A6FF;
-    --accent: #1F6FEB;
-    --accent-glow: rgba(31, 111, 235, 0.15);
-    --green: #3fb950;
-    --orange: #e3b341;
-    --purple: #bc8cff;
-    --text: #e6edf3;
-    --text-muted: #7d8590;
-    --text-dim: #484f58;
-    --mono: 'Geist Mono', 'Berkeley Mono', monospace;
-    --display: 'Bricolage Grotesque', sans-serif;
-  }
-
-  html { scroll-behavior: smooth; }
-
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: var(--display);
-    font-size: 16px;
-    line-height: 1.6;
-    overflow-x: hidden;
-    -webkit-font-smoothing: antialiased;
-  }
-
-  /* ── NOISE TEXTURE OVERLAY ── */
-  body::before {
-    content: '';
-    position: fixed;
-    inset: 0;
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
-    pointer-events: none;
-    z-index: 1000;
-    opacity: 0.5;
-  }
-
-  /* ── GRID BACKGROUND ── */
-  .grid-bg {
-    position: absolute;
-    inset: 0;
-    background-image:
-      linear-gradient(rgba(88, 166, 255, 0.04) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(88, 166, 255, 0.04) 1px, transparent 1px);
-    background-size: 40px 40px;
-    mask-image: linear-gradient(to bottom, transparent 0%, black 10%, black 80%, transparent 100%);
-  }
-
-  /* ── NAV ── */
-  nav {
-    position: fixed;
-    top: 0; left: 0; right: 0;
-    z-index: 100;
-    height: 56px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0 32px;
-    background: rgba(13, 17, 23, 0.85);
-    backdrop-filter: blur(12px);
-    border-bottom: 1px solid var(--border);
-  }
-
-  .nav-logo {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    text-decoration: none;
-    color: var(--text);
-    font-weight: 700;
-    font-size: 15px;
-    letter-spacing: -0.01em;
-  }
-
-  .logo-icon {
-    width: 28px; height: 28px;
-    background: linear-gradient(135deg, var(--accent), var(--primary));
-    border-radius: 7px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-family: var(--mono);
-    font-size: 12px;
-    font-weight: 500;
-    color: white;
-    flex-shrink: 0;
-  }
-
-  .nav-links {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    list-style: none;
-  }
-
-  .nav-links a {
-    color: var(--text-muted);
-    text-decoration: none;
-    font-size: 13.5px;
-    font-weight: 400;
-    padding: 6px 12px;
-    border-radius: 6px;
-    transition: color 0.15s, background 0.15s;
-  }
-
-  .nav-links a:hover { color: var(--text); background: var(--surface); }
-
-  .nav-cta {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 7px;
-    padding: 7px 16px;
-    border-radius: 7px;
-    font-family: var(--display);
-    font-size: 13.5px;
-    font-weight: 500;
-    text-decoration: none;
-    cursor: pointer;
-    transition: all 0.18s;
-    border: none;
-    white-space: nowrap;
-  }
-
-  .btn-ghost {
-    color: var(--text-muted);
-    background: transparent;
-    border: 1px solid var(--border-bright);
-  }
-  .btn-ghost:hover { color: var(--text); border-color: var(--text-dim); background: var(--surface); }
-
-  .btn-primary {
-    color: white;
-    background: var(--accent);
-    box-shadow: 0 0 0 1px rgba(31,111,235,0.5), 0 2px 12px rgba(31,111,235,0.2);
-  }
-  .btn-primary:hover {
-    background: #2c7ef0;
-    box-shadow: 0 0 0 1px rgba(31,111,235,0.7), 0 4px 20px rgba(31,111,235,0.35);
-    transform: translateY(-1px);
-  }
-
-  .star-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    padding: 5px 12px;
-    border-radius: 6px;
-    font-family: var(--mono);
-    font-size: 12px;
-    color: var(--orange);
-    background: rgba(227, 179, 65, 0.08);
-    border: 1px solid rgba(227, 179, 65, 0.2);
-    text-decoration: none;
-    transition: all 0.18s;
-  }
-  .star-badge:hover { background: rgba(227, 179, 65, 0.14); }
-  #star-count { font-weight: 600; }
-
-  /* ── HERO ── */
-  .hero {
-    position: relative;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-    padding: 120px 24px 80px;
-    overflow: hidden;
-  }
-
-  .hero-glow {
-    position: absolute;
-    width: 700px; height: 700px;
-    border-radius: 50%;
-    background: radial-gradient(ellipse, rgba(31,111,235,0.12) 0%, transparent 70%);
-    top: 50%; left: 50%;
-    transform: translate(-50%, -60%);
-    pointer-events: none;
-  }
-
-  .hero-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 4px 12px 4px 6px;
-    background: rgba(88,166,255,0.08);
-    border: 1px solid rgba(88,166,255,0.2);
-    border-radius: 100px;
-    font-family: var(--mono);
-    font-size: 11.5px;
-    color: var(--primary);
-    margin-bottom: 32px;
-    animation: fadeUp 0.6s ease both;
-  }
-
-  .badge-dot {
-    width: 6px; height: 6px;
-    border-radius: 50%;
-    background: var(--green);
-    box-shadow: 0 0 6px var(--green);
-    animation: pulse 2s ease infinite;
-  }
-
-  @keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.4; }
-  }
-
-  .hero h1 {
-    font-size: clamp(42px, 7vw, 80px);
-    font-weight: 800;
-    line-height: 1.05;
-    letter-spacing: -0.03em;
-    margin-bottom: 24px;
-    animation: fadeUp 0.6s 0.1s ease both;
-    max-width: 800px;
-  }
-
-  .hero h1 em {
-    font-style: normal;
-    background: linear-gradient(135deg, var(--primary), var(--purple));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-  }
-
-  .hero-sub {
-    font-size: clamp(16px, 2.2vw, 20px);
-    color: var(--text-muted);
-    max-width: 520px;
-    margin-bottom: 44px;
-    font-weight: 400;
-    line-height: 1.55;
-    animation: fadeUp 0.6s 0.2s ease both;
-  }
-
-  .hero-actions {
-    display: flex;
-    gap: 12px;
-    flex-wrap: wrap;
-    justify-content: center;
-    animation: fadeUp 0.6s 0.3s ease both;
-  }
-
-  .hero-actions .btn { font-size: 15px; padding: 11px 22px; }
-
-  .hero-meta {
-    margin-top: 20px;
-    font-family: var(--mono);
-    font-size: 12px;
-    color: var(--text-dim);
-    animation: fadeUp 0.6s 0.4s ease both;
-  }
-
-  /* Terminal preview */
-  .hero-terminal {
-    position: relative;
-    margin-top: 72px;
-    max-width: 820px;
-    width: 100%;
-    animation: fadeUp 0.7s 0.45s ease both;
-  }
-
-  .terminal-window {
-    background: var(--surface);
-    border: 1px solid var(--border-bright);
-    border-radius: 12px;
-    overflow: hidden;
-    box-shadow:
-      0 0 0 1px rgba(255,255,255,0.04),
-      0 40px 80px rgba(0,0,0,0.6),
-      0 0 120px rgba(31,111,235,0.08);
-  }
-
-  .terminal-bar {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 12px 16px;
-    background: var(--surface-2);
-    border-bottom: 1px solid var(--border);
-  }
-
-  .terminal-dot {
-    width: 12px; height: 12px;
-    border-radius: 50%;
-  }
-
-  .td-red { background: #ff5f57; }
-  .td-yellow { background: #febc2e; }
-  .td-green { background: #28c840; }
-
-  .terminal-title {
-    flex: 1;
-    text-align: center;
-    font-family: var(--mono);
-    font-size: 12px;
-    color: var(--text-dim);
-  }
-
-  .terminal-body {
-    padding: 24px;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 0;
-    min-height: 320px;
-  }
-
-  .editor-panel {
-    border-right: 1px solid var(--border);
-    padding-right: 24px;
-  }
-
-  .tasks-panel {
-    padding-left: 24px;
-  }
-
-  .panel-label {
-    font-family: var(--mono);
-    font-size: 10px;
-    color: var(--text-dim);
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    margin-bottom: 16px;
-  }
-
-  .code-line {
-    display: flex;
-    align-items: flex-start;
-    gap: 16px;
-    margin-bottom: 4px;
-    font-family: var(--mono);
-    font-size: 12.5px;
-    line-height: 1.7;
-  }
-
-  .line-num {
-    color: var(--text-dim);
-    user-select: none;
-    min-width: 16px;
-    text-align: right;
-  }
-
-  .code-text { color: #c9d1d9; }
-  .code-kw { color: #ff7b72; }
-  .code-fn { color: #d2a8ff; }
-  .code-str { color: #a5d6ff; }
-  .code-cm { color: #6e7681; }
-  .code-num { color: #79c0ff; }
-
-  .task-highlight {
-    background: rgba(31,111,235,0.12);
-    border-left: 2px solid var(--accent);
-    border-radius: 0 3px 3px 0;
-    padding-left: 6px;
-    margin-left: -6px;
-    animation: highlightPulse 3s ease infinite;
-  }
-
-  @keyframes highlightPulse {
-    0%, 100% { background: rgba(31,111,235,0.12); }
-    50% { background: rgba(31,111,235,0.2); }
-  }
-
-  .task-tooltip {
-    position: absolute;
-    top: 120px; left: 200px;
-    background: var(--surface-2);
-    border: 1px solid var(--accent);
-    border-radius: 8px;
-    padding: 10px 14px;
-    font-family: var(--mono);
-    font-size: 11.5px;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.4), 0 0 0 1px rgba(31,111,235,0.2);
-    animation: tooltipFloat 4s ease infinite;
-    z-index: 10;
-    white-space: nowrap;
-  }
-
-  @keyframes tooltipFloat {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-4px); }
-  }
-
-  .tooltip-label { color: var(--text-dim); font-size: 10px; margin-bottom: 3px; }
-  .tooltip-action {
-    color: var(--primary);
-    display: flex;
-    align-items: center;
-    gap: 6px;
-  }
-
-  .task-item {
-    display: flex;
-    align-items: flex-start;
-    gap: 10px;
-    padding: 10px 12px;
-    border-radius: 7px;
-    margin-bottom: 6px;
-    border: 1px solid var(--border);
-    background: var(--bg);
-    transition: border-color 0.2s;
-    cursor: pointer;
-  }
-
-  .task-item:hover { border-color: var(--border-bright); }
-
-  .task-item.active {
-    border-color: rgba(31,111,235,0.5);
-    background: rgba(31,111,235,0.05);
-  }
-
-  .task-check {
-    width: 14px; height: 14px;
-    border-radius: 3px;
-    border: 1.5px solid var(--border-bright);
-    flex-shrink: 0;
-    margin-top: 2px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .task-check.done {
-    background: var(--green);
-    border-color: var(--green);
-  }
-
-  .task-text-wrap { flex: 1; min-width: 0; }
-  .task-title { font-size: 12px; color: var(--text); margin-bottom: 3px; }
-  .task-title.strikethrough { color: var(--text-dim); text-decoration: line-through; }
-  .task-meta { font-family: var(--mono); font-size: 10px; color: var(--text-dim); display: flex; gap: 8px; }
-  .task-file { color: var(--primary); }
-
-  .task-avatar {
-    width: 18px; height: 18px;
-    border-radius: 50%;
-    font-size: 9px;
-    display: flex; align-items: center; justify-content: center;
-    color: white;
-    font-weight: 600;
-    flex-shrink: 0;
-  }
-
-  /* ── BRAND BAR ── */
-  .brand-bar {
-    padding: 20px 0;
-    background: var(--surface);
-    border-top: 1px solid var(--border);
-    border-bottom: 1px solid var(--border);
-    overflow: hidden;
-  }
-
-  .brand-scroll {
-    display: flex;
-    gap: 48px;
-    width: max-content;
-    animation: scroll 22s linear infinite;
-  }
-
-  @keyframes scroll {
-    from { transform: translateX(0); }
-    to { transform: translateX(-50%); }
-  }
-
-  .brand-item {
-    font-family: var(--mono);
-    font-size: 12px;
-    color: var(--text-dim);
-    white-space: nowrap;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .brand-item::before {
-    content: '';
-    width: 4px; height: 4px;
-    border-radius: 50%;
-    background: var(--border-bright);
-  }
-
-  /* ── SECTION COMMON ── */
-  section { padding: 100px 24px; }
-
-  .section-inner {
-    max-width: 1080px;
-    margin: 0 auto;
-  }
-
-  .section-tag {
-    font-family: var(--mono);
-    font-size: 11px;
-    color: var(--primary);
-    text-transform: uppercase;
-    letter-spacing: 0.12em;
-    margin-bottom: 12px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .section-tag::before {
-    content: '';
-    width: 20px;
-    height: 1px;
-    background: var(--primary);
-    opacity: 0.5;
-  }
-
-  .section-title {
-    font-size: clamp(28px, 4vw, 44px);
-    font-weight: 800;
-    letter-spacing: -0.025em;
-    line-height: 1.1;
-    margin-bottom: 16px;
-  }
-
-  .section-sub {
-    font-size: 17px;
-    color: var(--text-muted);
-    max-width: 520px;
-    line-height: 1.6;
-    margin-bottom: 60px;
-  }
-
-  /* ── DEMO SECTION ── */
-  #demo { background: var(--bg-2); position: relative; }
-
-  .demo-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 16px;
-  }
-
-  .demo-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    overflow: hidden;
-    transition: border-color 0.2s, transform 0.2s;
-    cursor: pointer;
-  }
-
-  .demo-card:hover {
-    border-color: var(--border-bright);
-    transform: translateY(-2px);
-  }
-
-  .demo-card.featured {
-    grid-column: 1 / -1;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-  }
-
-  .demo-gif-area {
-    aspect-ratio: 16 / 9;
-    background: var(--bg);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    position: relative;
-    overflow: hidden;
-  }
-
-  .demo-card.featured .demo-gif-area {
-    aspect-ratio: auto;
-    min-height: 240px;
-  }
-
-  .gif-placeholder {
-    width: 100%;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 12px;
-    position: relative;
-    overflow: hidden;
-  }
-
-  /* Animated code simulation */
-  .sim-editor {
-    width: 90%;
-    font-family: var(--mono);
-    font-size: 11px;
-    line-height: 1.8;
-    color: #c9d1d9;
-    position: relative;
-  }
-
-  .sim-selection {
-    background: rgba(31,111,235,0.25);
-    border-radius: 2px;
-    padding: 1px 0;
-    animation: selectAnim 4s ease infinite;
-  }
-
-  @keyframes selectAnim {
-    0%, 100% { background: rgba(31,111,235,0.25); }
-    50% { background: rgba(31,111,235,0.4); }
-  }
-
-  .sim-popup {
-    position: absolute;
-    bottom: 16px; right: 16px;
-    background: var(--surface-2);
-    border: 1px solid rgba(88,166,255,0.4);
-    border-radius: 8px;
-    padding: 8px 12px;
-    font-family: var(--mono);
-    font-size: 10px;
-    color: var(--primary);
-    box-shadow: 0 8px 24px rgba(0,0,0,0.4);
-    animation: popIn 0.3s ease both, popFloat 3s 0.3s ease infinite;
-  }
-
-  @keyframes popIn { from { opacity: 0; scale: 0.9; } to { opacity: 1; scale: 1; } }
-  @keyframes popFloat {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-3px); }
-  }
-
-  .demo-info {
-    padding: 20px 24px;
-  }
-
-  .demo-card.featured .demo-info {
-    padding: 32px;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-  }
-
-  .demo-num {
-    font-family: var(--mono);
-    font-size: 11px;
-    color: var(--text-dim);
-    margin-bottom: 8px;
-  }
-
-  .demo-title {
-    font-size: 17px;
-    font-weight: 700;
-    margin-bottom: 8px;
-    letter-spacing: -0.01em;
-  }
-
-  .demo-desc {
-    font-size: 14px;
-    color: var(--text-muted);
-    line-height: 1.55;
-  }
-
-  .demo-tag {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    margin-top: 14px;
-    font-family: var(--mono);
-    font-size: 10.5px;
-    color: var(--green);
-    background: rgba(63, 185, 80, 0.08);
-    border: 1px solid rgba(63,185,80,0.2);
-    border-radius: 100px;
-    padding: 3px 10px;
-  }
-
-  /* ── FEATURES ── */
-  #features { position: relative; }
-
-  .features-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 1px;
-    background: var(--border);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    overflow: hidden;
-  }
-
-  .feature-card {
-    background: var(--bg);
-    padding: 32px 28px;
-    transition: background 0.2s;
-    position: relative;
-    overflow: hidden;
-  }
-
-  .feature-card::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(135deg, var(--accent-glow) 0%, transparent 60%);
-    opacity: 0;
-    transition: opacity 0.3s;
-  }
-
-  .feature-card:hover { background: var(--surface); }
-  .feature-card:hover::before { opacity: 1; }
-
-  .feature-icon {
-    width: 40px; height: 40px;
-    border-radius: 10px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 18px;
-    margin-bottom: 20px;
-    border: 1px solid var(--border-bright);
-    background: var(--surface-2);
-    position: relative;
-    z-index: 1;
-  }
-
-  .feature-name {
-    font-size: 15px;
-    font-weight: 700;
-    margin-bottom: 8px;
-    letter-spacing: -0.01em;
-    position: relative;
-    z-index: 1;
-  }
-
-  .feature-desc {
-    font-size: 13.5px;
-    color: var(--text-muted);
-    line-height: 1.6;
-    position: relative;
-    z-index: 1;
-  }
-
-  /* ── HOW IT WORKS ── */
-  #how { background: var(--bg-2); }
-
-  .steps-layout {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 64px;
-    align-items: center;
-  }
-
-  .steps-list { display: flex; flex-direction: column; gap: 0; }
-
-  .step {
-    display: flex;
-    gap: 20px;
-    padding: 24px 0;
-    border-bottom: 1px solid var(--border);
-    cursor: pointer;
-    transition: all 0.2s;
-    position: relative;
-  }
-
-  .step:last-child { border-bottom: none; }
-
-  .step.active .step-num { color: var(--primary); border-color: var(--accent); background: rgba(31,111,235,0.1); }
-  .step.active .step-title { color: var(--text); }
-
-  .step-num {
-    width: 32px; height: 32px;
-    border-radius: 8px;
-    border: 1px solid var(--border-bright);
-    display: flex; align-items: center; justify-content: center;
-    font-family: var(--mono);
-    font-size: 12px;
-    color: var(--text-dim);
-    flex-shrink: 0;
-    transition: all 0.2s;
-  }
-
-  .step-content { flex: 1; }
-
-  .step-title {
-    font-size: 16px;
-    font-weight: 600;
-    color: var(--text-muted);
-    margin-bottom: 4px;
-    transition: color 0.2s;
-    letter-spacing: -0.01em;
-  }
-
-  .step-desc {
-    font-size: 13.5px;
-    color: var(--text-dim);
-    line-height: 1.6;
-    display: none;
-  }
-
-  .step.active .step-desc { display: block; color: var(--text-muted); }
-
-  .steps-visual {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    overflow: hidden;
-    min-height: 400px;
-    position: relative;
-  }
-
-  .visual-bar {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 14px 18px;
-    border-bottom: 1px solid var(--border);
-    background: var(--surface-2);
-    font-family: var(--mono);
-    font-size: 12px;
-    color: var(--text-dim);
-  }
-
-  .visual-content {
-    padding: 24px;
-    font-family: var(--mono);
-    font-size: 12.5px;
-  }
-
-  .vc-select {
-    background: rgba(31,111,235,0.15);
-    border: 1px solid rgba(31,111,235,0.3);
-    border-radius: 4px;
-    padding: 6px 10px;
-    margin: 6px 0;
-    color: var(--text);
-  }
-
-  .vc-command {
-    margin-top: 20px;
-    padding: 10px 14px;
-    background: var(--bg);
-    border-radius: 8px;
-    border: 1px solid var(--border-bright);
-    color: var(--primary);
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .vc-command::before {
-    content: '>';
-    color: var(--text-dim);
-  }
-
-  .vc-input-row {
-    margin-top: 12px;
-    padding: 10px 14px;
-    background: var(--bg);
-    border: 1px solid var(--accent);
-    border-radius: 8px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    color: var(--text);
-  }
-
-  .vc-cursor {
-    width: 2px;
-    height: 14px;
-    background: var(--primary);
-    animation: blink 1s step-end infinite;
-  }
-
-  @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
-
-  .vc-task-list { margin-top: 16px; }
-  .vc-task-row {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 8px 0;
-    border-bottom: 1px solid var(--border);
-    color: var(--text);
-    font-size: 12px;
-  }
-
-  .vc-badge {
-    font-size: 10px;
-    padding: 2px 7px;
-    border-radius: 4px;
-    margin-left: auto;
-    font-weight: 500;
-  }
-  .badge-open { background: rgba(63,185,80,0.1); color: var(--green); border: 1px solid rgba(63,185,80,0.2); }
-  .badge-review { background: rgba(227,179,65,0.1); color: var(--orange); border: 1px solid rgba(227,179,65,0.2); }
-  .badge-done { background: rgba(88,166,255,0.1); color: var(--primary); border: 1px solid rgba(88,166,255,0.2); }
-
-  /* ── INSTALL ── */
-  #install { position: relative; }
-
-  .install-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
-    gap: 20px;
-  }
-
-  .install-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 14px;
-    padding: 28px;
-    transition: border-color 0.2s;
-  }
-
-  .install-card:hover { border-color: var(--border-bright); }
-
-  .install-num {
-    font-family: var(--mono);
-    font-size: 11px;
-    color: var(--primary);
-    margin-bottom: 12px;
-  }
-
-  .install-title {
-    font-size: 16px;
-    font-weight: 700;
-    margin-bottom: 8px;
-    letter-spacing: -0.01em;
-  }
-
-  .install-desc {
-    font-size: 13px;
-    color: var(--text-muted);
-    margin-bottom: 20px;
-    line-height: 1.6;
-  }
-
-  .code-block {
-    background: var(--bg);
-    border: 1px solid var(--border-bright);
-    border-radius: 9px;
-    padding: 14px 16px;
-    font-family: var(--mono);
-    font-size: 12px;
-    color: #a5d6ff;
-    position: relative;
-    overflow: hidden;
-  }
-
-  .code-block .copy-btn {
-    position: absolute;
-    top: 8px; right: 8px;
-    background: var(--surface);
-    border: 1px solid var(--border-bright);
-    border-radius: 5px;
-    padding: 3px 8px;
-    font-family: var(--mono);
-    font-size: 10px;
-    color: var(--text-dim);
-    cursor: pointer;
-    transition: all 0.15s;
-  }
-
-  .code-block .copy-btn:hover { color: var(--text); border-color: var(--text-dim); }
-
-  .install-steps-list { list-style: none; margin-top: 14px; }
-  .install-steps-list li {
-    display: flex;
-    align-items: flex-start;
-    gap: 10px;
-    padding: 6px 0;
-    font-size: 13px;
-    color: var(--text-muted);
-    border-bottom: 1px solid var(--border);
-  }
-  .install-steps-list li:last-child { border-bottom: none; }
-  .step-li-num {
-    font-family: var(--mono);
-    font-size: 10px;
-    color: var(--primary);
-    min-width: 18px;
-    padding-top: 2px;
-  }
-
-  /* ── GITHUB SECTION ── */
-  #github {
-    background: var(--bg-2);
-    text-align: center;
-  }
-
-  .github-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 20px;
-    padding: 64px 48px;
-    max-width: 680px;
-    margin: 0 auto;
-    position: relative;
-    overflow: hidden;
-  }
-
-  .github-card::before {
-    content: '';
-    position: absolute;
-    top: -60px; left: 50%; transform: translateX(-50%);
-    width: 400px; height: 400px;
-    background: radial-gradient(ellipse, rgba(88,166,255,0.06) 0%, transparent 70%);
-    pointer-events: none;
-  }
-
-  .github-logo {
-    width: 56px; height: 56px;
-    margin: 0 auto 24px;
-    background: var(--surface-2);
-    border: 1px solid var(--border-bright);
-    border-radius: 14px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .github-logo svg {
-    width: 32px; height: 32px;
-    fill: var(--text);
-  }
-
-  .github-card h2 {
-    font-size: 28px;
-    font-weight: 800;
-    letter-spacing: -0.025em;
-    margin-bottom: 12px;
-  }
-
-  .github-card p {
-    font-size: 15px;
-    color: var(--text-muted);
-    margin-bottom: 32px;
-    max-width: 440px;
-    margin-left: auto;
-    margin-right: auto;
-  }
-
-  .github-stats {
-    display: flex;
-    justify-content: center;
-    gap: 24px;
-    margin-bottom: 36px;
-  }
-
-  .stat-pill {
-    display: flex;
-    align-items: center;
-    gap: 7px;
-    padding: 7px 16px;
-    background: var(--bg);
-    border: 1px solid var(--border-bright);
-    border-radius: 100px;
-    font-family: var(--mono);
-    font-size: 12px;
-    color: var(--text-muted);
-  }
-
-  .stat-pill span { color: var(--text); font-weight: 600; }
-
-  .github-btns { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
-  .github-btns .btn { font-size: 14.5px; padding: 10px 22px; }
-
-  /* ── FOOTER ── */
-  footer {
-    border-top: 1px solid var(--border);
-    padding: 36px 24px;
-  }
-
-  .footer-inner {
-    max-width: 1080px;
-    margin: 0 auto;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 24px;
-    flex-wrap: wrap;
-  }
-
-  .footer-logo {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    font-size: 14px;
-    font-weight: 600;
-    color: var(--text);
-  }
-
-  .footer-links {
-    display: flex;
-    gap: 4px;
-  }
-
-  .footer-links a {
-    color: var(--text-dim);
-    font-size: 13px;
-    text-decoration: none;
-    padding: 5px 12px;
-    border-radius: 6px;
-    transition: color 0.15s, background 0.15s;
-    font-weight: 400;
-  }
-
-  .footer-links a:hover { color: var(--text); background: var(--surface); }
-
-  .footer-copy {
-    font-family: var(--mono);
-    font-size: 11.5px;
-    color: var(--text-dim);
-  }
-
-  /* ── ANIMATIONS ── */
-  @keyframes fadeUp {
-    from { opacity: 0; transform: translateY(16px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-
-  .reveal {
-    opacity: 0;
-    transform: translateY(20px);
-    transition: opacity 0.6s ease, transform 0.6s ease;
-  }
-
-  .reveal.visible {
-    opacity: 1;
-    transform: translateY(0);
-  }
-
-  .reveal-delay-1 { transition-delay: 0.1s; }
-  .reveal-delay-2 { transition-delay: 0.2s; }
-  .reveal-delay-3 { transition-delay: 0.3s; }
-
-  /* ── DIVIDER ── */
-  .divider {
-    max-width: 1080px;
-    margin: 0 auto;
-    height: 1px;
-    background: linear-gradient(90deg, transparent, var(--border), transparent);
-  }
-
-  /* ── RESPONSIVE ── */
-  @media (max-width: 768px) {
-    nav { padding: 0 16px; }
-    nav ul { display: none; }
-    .terminal-body { grid-template-columns: 1fr; }
-    .editor-panel { border-right: none; border-bottom: 1px solid var(--border); padding-right: 0; padding-bottom: 20px; margin-bottom: 20px; }
-    .tasks-panel { padding-left: 0; }
-    .demo-grid { grid-template-columns: 1fr; }
-    .demo-card.featured { grid-template-columns: 1fr; }
-    .features-grid { grid-template-columns: 1fr; }
-    .steps-layout { grid-template-columns: 1fr; }
-    .install-grid { grid-template-columns: 1fr; }
-    .github-stats { flex-direction: column; align-items: center; }
-    .footer-inner { flex-direction: column; text-align: center; }
-    .hero-actions .btn { padding: 10px 18px; font-size: 14px; }
-  }
-
-  /* ── CUSTOM SCROLLBAR ── */
-  ::-webkit-scrollbar { width: 8px; }
-  ::-webkit-scrollbar-track { background: var(--bg); }
-  ::-webkit-scrollbar-thumb { background: var(--border-bright); border-radius: 4px; }
-  ::-webkit-scrollbar-thumb:hover { background: var(--text-dim); }
-</style>
-</head>
-<body>
-
-<!-- ── NAV ── -->
-<nav>
-  <a href="#" class="nav-logo">
-    <div class="logo-icon">DT</div>
-    DevTasks
-  </a>
-  <ul class="nav-links">
-    <li><a href="#demo">Demo</a></li>
-    <li><a href="#features">Features</a></li>
-    <li><a href="#how">How it works</a></li>
-    <li><a href="#install">Install</a></li>
-    <li><a href="#github">GitHub</a></li>
-  </ul>
-  <div class="nav-cta">
-    <a href="https://github.com/your-username/devtasks" target="_blank" class="star-badge">
-      ⭐ <span id="star-count">1.2k</span>
-    </a>
-    <a href="https://github.com/your-username/devtasks/releases" class="btn btn-primary" target="_blank">
-      ↓ Download
-    </a>
-  </div>
-</nav>
-
-<!-- ── HERO ── -->
-<section class="hero" id="hero">
-  <div class="grid-bg"></div>
-  <div class="hero-glow"></div>
-
-  <div class="hero-badge">
-    <span class="badge-dot"></span>
-    Now available for VS Code
-  </div>
-
-  <h1>Tasks that live<br /><em>inside your code.</em></h1>
-
-  <p class="hero-sub">
-    Stop switching between tools. Create, review, and assign tasks
-    directly in VS Code — where the work actually happens.
-  </p>
-
-  <div class="hero-actions">
-    <a href="https://github.com/your-username/devtasks" target="_blank" class="btn btn-ghost">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
-      View on GitHub
-    </a>
-    <a href="https://github.com/your-username/devtasks/releases" target="_blank" class="btn btn-primary">
-      ↓ Download Extension
-    </a>
-  </div>
-
-  <p class="hero-meta">Free &amp; open-source · Works with VS Code 1.70+</p>
-
-  <!-- Terminal Preview -->
-  <div class="hero-terminal">
-    <div class="terminal-window">
-      <div class="terminal-bar">
-        <div class="terminal-dot td-red"></div>
-        <div class="terminal-dot td-yellow"></div>
-        <div class="terminal-dot td-green"></div>
-        <span class="terminal-title">authService.ts — DevTasks</span>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>DevTasks — Tasks that live inside your code.</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Berkeley+Mono&family=Bricolage+Grotesque:opsz,wght@12..96,300;12..96,400;12..96,500;12..96,700;12..96,800&family=Geist+Mono:wght@300;400;500&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      :root {
+        --bg: #0d1117;
+        --bg-2: #0f1318;
+        --surface: #161b22;
+        --surface-2: #1c2128;
+        --border: #21262d;
+        --border-bright: #30363d;
+        --primary: #58a6ff;
+        --accent: #1f6feb;
+        --accent-glow: rgba(31, 111, 235, 0.15);
+        --green: #3fb950;
+        --orange: #e3b341;
+        --purple: #bc8cff;
+        --text: #e6edf3;
+        --text-muted: #7d8590;
+        --text-dim: #484f58;
+        --mono: "Geist Mono", "Berkeley Mono", monospace;
+        --display: "Bricolage Grotesque", sans-serif;
+      }
+
+      html {
+        scroll-behavior: smooth;
+      }
+
+      body {
+        background: var(--bg);
+        color: var(--text);
+        font-family: var(--display);
+        font-size: 16px;
+        line-height: 1.6;
+        overflow-x: hidden;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      /* ── NOISE TEXTURE OVERLAY ── */
+      body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+        pointer-events: none;
+        z-index: 1000;
+        opacity: 0.5;
+      }
+
+      /* ── GRID BACKGROUND ── */
+      .grid-bg {
+        position: absolute;
+        inset: 0;
+        background-image:
+          linear-gradient(rgba(88, 166, 255, 0.04) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(88, 166, 255, 0.04) 1px, transparent 1px);
+        background-size: 40px 40px;
+        mask-image: linear-gradient(to bottom, transparent 0%, black 10%, black 80%, transparent 100%);
+      }
+
+      /* ── NAV ── */
+      nav {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 100;
+        height: 56px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 32px;
+        background: rgba(13, 17, 23, 0.85);
+        backdrop-filter: blur(12px);
+        border-bottom: 1px solid var(--border);
+      }
+
+      .nav-logo {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        text-decoration: none;
+        color: var(--text);
+        font-weight: 700;
+        font-size: 15px;
+        letter-spacing: -0.01em;
+      }
+
+      .logo-icon {
+        width: 28px;
+        height: 28px;
+        background: linear-gradient(135deg, var(--accent), var(--primary));
+        border-radius: 7px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: var(--mono);
+        font-size: 12px;
+        font-weight: 500;
+        color: white;
+        flex-shrink: 0;
+      }
+
+      .nav-links {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        list-style: none;
+      }
+
+      .nav-links a {
+        color: var(--text-muted);
+        text-decoration: none;
+        font-size: 13.5px;
+        font-weight: 400;
+        padding: 6px 12px;
+        border-radius: 6px;
+        transition:
+          color 0.15s,
+          background 0.15s;
+      }
+
+      .nav-links a:hover {
+        color: var(--text);
+        background: var(--surface);
+      }
+
+      .nav-cta {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        padding: 7px 16px;
+        border-radius: 7px;
+        font-family: var(--display);
+        font-size: 13.5px;
+        font-weight: 500;
+        text-decoration: none;
+        cursor: pointer;
+        transition: all 0.18s;
+        border: none;
+        white-space: nowrap;
+      }
+
+      .btn-ghost {
+        color: var(--text-muted);
+        background: transparent;
+        border: 1px solid var(--border-bright);
+      }
+      .btn-ghost:hover {
+        color: var(--text);
+        border-color: var(--text-dim);
+        background: var(--surface);
+      }
+
+      .btn-primary {
+        color: white;
+        background: var(--accent);
+        box-shadow:
+          0 0 0 1px rgba(31, 111, 235, 0.5),
+          0 2px 12px rgba(31, 111, 235, 0.2);
+      }
+      .btn-primary:hover {
+        background: #2c7ef0;
+        box-shadow:
+          0 0 0 1px rgba(31, 111, 235, 0.7),
+          0 4px 20px rgba(31, 111, 235, 0.35);
+        transform: translateY(-1px);
+      }
+
+      .star-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 5px 12px;
+        border-radius: 6px;
+        font-family: var(--mono);
+        font-size: 12px;
+        color: var(--orange);
+        background: rgba(227, 179, 65, 0.08);
+        border: 1px solid rgba(227, 179, 65, 0.2);
+        text-decoration: none;
+        transition: all 0.18s;
+      }
+      .star-badge:hover {
+        background: rgba(227, 179, 65, 0.14);
+      }
+      #star-count {
+        font-weight: 600;
+      }
+
+      /* ── HERO ── */
+      .hero {
+        position: relative;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        padding: 120px 24px 80px;
+        overflow: hidden;
+      }
+
+      .hero-glow {
+        position: absolute;
+        width: 700px;
+        height: 700px;
+        border-radius: 50%;
+        background: radial-gradient(ellipse, rgba(31, 111, 235, 0.12) 0%, transparent 70%);
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -60%);
+        pointer-events: none;
+      }
+
+      .hero-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 12px 4px 6px;
+        background: rgba(88, 166, 255, 0.08);
+        border: 1px solid rgba(88, 166, 255, 0.2);
+        border-radius: 100px;
+        font-family: var(--mono);
+        font-size: 11.5px;
+        color: var(--primary);
+        margin-bottom: 32px;
+        animation: fadeUp 0.6s ease both;
+      }
+
+      .badge-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: var(--green);
+        box-shadow: 0 0 6px var(--green);
+        animation: pulse 2s ease infinite;
+      }
+
+      @keyframes pulse {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.4;
+        }
+      }
+
+      .hero h1 {
+        font-size: clamp(42px, 7vw, 80px);
+        font-weight: 800;
+        line-height: 1.05;
+        letter-spacing: -0.03em;
+        margin-bottom: 24px;
+        animation: fadeUp 0.6s 0.1s ease both;
+        max-width: 800px;
+      }
+
+      .hero h1 em {
+        font-style: normal;
+        background: linear-gradient(135deg, var(--primary), var(--purple));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+      }
+
+      .hero-sub {
+        font-size: clamp(16px, 2.2vw, 20px);
+        color: var(--text-muted);
+        max-width: 520px;
+        margin-bottom: 44px;
+        font-weight: 400;
+        line-height: 1.55;
+        animation: fadeUp 0.6s 0.2s ease both;
+      }
+
+      .hero-actions {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+        justify-content: center;
+        animation: fadeUp 0.6s 0.3s ease both;
+      }
+
+      .hero-actions .btn {
+        font-size: 15px;
+        padding: 11px 22px;
+      }
+
+      .hero-meta {
+        margin-top: 20px;
+        font-family: var(--mono);
+        font-size: 12px;
+        color: var(--text-dim);
+        animation: fadeUp 0.6s 0.4s ease both;
+      }
+
+      /* Terminal preview */
+      .hero-terminal {
+        position: relative;
+        margin-top: 72px;
+        max-width: 820px;
+        width: 100%;
+        animation: fadeUp 0.7s 0.45s ease both;
+      }
+
+      .terminal-window {
+        background: var(--surface);
+        border: 1px solid var(--border-bright);
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow:
+          0 0 0 1px rgba(255, 255, 255, 0.04),
+          0 40px 80px rgba(0, 0, 0, 0.6),
+          0 0 120px rgba(31, 111, 235, 0.08);
+      }
+
+      .terminal-bar {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 12px 16px;
+        background: var(--surface-2);
+        border-bottom: 1px solid var(--border);
+      }
+
+      .terminal-dot {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+      }
+
+      .td-red {
+        background: #ff5f57;
+      }
+      .td-yellow {
+        background: #febc2e;
+      }
+      .td-green {
+        background: #28c840;
+      }
+
+      .terminal-title {
+        flex: 1;
+        text-align: center;
+        font-family: var(--mono);
+        font-size: 12px;
+        color: var(--text-dim);
+      }
+
+      .terminal-body {
+        padding: 24px;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0;
+        min-height: 320px;
+      }
+
+      .editor-panel {
+        border-right: 1px solid var(--border);
+        padding-right: 24px;
+      }
+
+      .tasks-panel {
+        padding-left: 24px;
+      }
+
+      .panel-label {
+        font-family: var(--mono);
+        font-size: 10px;
+        color: var(--text-dim);
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        margin-bottom: 16px;
+      }
+
+      .code-line {
+        display: flex;
+        align-items: flex-start;
+        gap: 16px;
+        margin-bottom: 4px;
+        font-family: var(--mono);
+        font-size: 12.5px;
+        line-height: 1.7;
+      }
+
+      .line-num {
+        color: var(--text-dim);
+        user-select: none;
+        min-width: 16px;
+        text-align: right;
+      }
+
+      .code-text {
+        color: #c9d1d9;
+      }
+      .code-kw {
+        color: #ff7b72;
+      }
+      .code-fn {
+        color: #d2a8ff;
+      }
+      .code-str {
+        color: #a5d6ff;
+      }
+      .code-cm {
+        color: #6e7681;
+      }
+      .code-num {
+        color: #79c0ff;
+      }
+
+      .task-highlight {
+        background: rgba(31, 111, 235, 0.12);
+        border-left: 2px solid var(--accent);
+        border-radius: 0 3px 3px 0;
+        padding-left: 6px;
+        margin-left: -6px;
+        animation: highlightPulse 3s ease infinite;
+      }
+
+      @keyframes highlightPulse {
+        0%,
+        100% {
+          background: rgba(31, 111, 235, 0.12);
+        }
+        50% {
+          background: rgba(31, 111, 235, 0.2);
+        }
+      }
+
+      .task-tooltip {
+        position: absolute;
+        top: 120px;
+        left: 200px;
+        background: var(--surface-2);
+        border: 1px solid var(--accent);
+        border-radius: 8px;
+        padding: 10px 14px;
+        font-family: var(--mono);
+        font-size: 11.5px;
+        box-shadow:
+          0 8px 32px rgba(0, 0, 0, 0.4),
+          0 0 0 1px rgba(31, 111, 235, 0.2);
+        animation: tooltipFloat 4s ease infinite;
+        z-index: 10;
+        white-space: nowrap;
+      }
+
+      @keyframes tooltipFloat {
+        0%,
+        100% {
+          transform: translateY(0);
+        }
+        50% {
+          transform: translateY(-4px);
+        }
+      }
+
+      .tooltip-label {
+        color: var(--text-dim);
+        font-size: 10px;
+        margin-bottom: 3px;
+      }
+      .tooltip-action {
+        color: var(--primary);
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .task-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        padding: 10px 12px;
+        border-radius: 7px;
+        margin-bottom: 6px;
+        border: 1px solid var(--border);
+        background: var(--bg);
+        transition: border-color 0.2s;
+        cursor: pointer;
+      }
+
+      .task-item:hover {
+        border-color: var(--border-bright);
+      }
+
+      .task-item.active {
+        border-color: rgba(31, 111, 235, 0.5);
+        background: rgba(31, 111, 235, 0.05);
+      }
+
+      .task-check {
+        width: 14px;
+        height: 14px;
+        border-radius: 3px;
+        border: 1.5px solid var(--border-bright);
+        flex-shrink: 0;
+        margin-top: 2px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .task-check.done {
+        background: var(--green);
+        border-color: var(--green);
+      }
+
+      .task-text-wrap {
+        flex: 1;
+        min-width: 0;
+      }
+      .task-title {
+        font-size: 12px;
+        color: var(--text);
+        margin-bottom: 3px;
+      }
+      .task-title.strikethrough {
+        color: var(--text-dim);
+        text-decoration: line-through;
+      }
+      .task-meta {
+        font-family: var(--mono);
+        font-size: 10px;
+        color: var(--text-dim);
+        display: flex;
+        gap: 8px;
+      }
+      .task-file {
+        color: var(--primary);
+      }
+
+      .task-avatar {
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        font-size: 9px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: 600;
+        flex-shrink: 0;
+      }
+
+      /* ── BRAND BAR ── */
+      .brand-bar {
+        padding: 20px 0;
+        background: var(--surface);
+        border-top: 1px solid var(--border);
+        border-bottom: 1px solid var(--border);
+        overflow: hidden;
+      }
+
+      .brand-scroll {
+        display: flex;
+        gap: 48px;
+        width: max-content;
+        animation: scroll 22s linear infinite;
+      }
+
+      @keyframes scroll {
+        from {
+          transform: translateX(0);
+        }
+        to {
+          transform: translateX(-50%);
+        }
+      }
+
+      .brand-item {
+        font-family: var(--mono);
+        font-size: 12px;
+        color: var(--text-dim);
+        white-space: nowrap;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .brand-item::before {
+        content: "";
+        width: 4px;
+        height: 4px;
+        border-radius: 50%;
+        background: var(--border-bright);
+      }
+
+      /* ── SECTION COMMON ── */
+      section {
+        padding: 100px 24px;
+      }
+
+      .section-inner {
+        max-width: 1080px;
+        margin: 0 auto;
+      }
+
+      .section-tag {
+        font-family: var(--mono);
+        font-size: 11px;
+        color: var(--primary);
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        margin-bottom: 12px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .section-tag::before {
+        content: "";
+        width: 20px;
+        height: 1px;
+        background: var(--primary);
+        opacity: 0.5;
+      }
+
+      .section-title {
+        font-size: clamp(28px, 4vw, 44px);
+        font-weight: 800;
+        letter-spacing: -0.025em;
+        line-height: 1.1;
+        margin-bottom: 16px;
+      }
+
+      .section-sub {
+        font-size: 17px;
+        color: var(--text-muted);
+        max-width: 520px;
+        line-height: 1.6;
+        margin-bottom: 60px;
+      }
+
+      /* ── DEMO SECTION ── */
+      #demo {
+        background: var(--bg-2);
+        position: relative;
+      }
+
+      .demo-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+      }
+
+      .demo-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        overflow: hidden;
+        transition:
+          border-color 0.2s,
+          transform 0.2s;
+        cursor: pointer;
+      }
+
+      .demo-card:hover {
+        border-color: var(--border-bright);
+        transform: translateY(-2px);
+      }
+
+      .demo-card.featured {
+        grid-column: 1 / -1;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .demo-gif-area {
+        aspect-ratio: 16 / 9;
+        background: var(--bg);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .demo-card.featured .demo-gif-area {
+        aspect-ratio: auto;
+        min-height: 240px;
+      }
+
+      .gif-placeholder {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+        position: relative;
+        overflow: hidden;
+      }
+
+      /* Animated code simulation */
+      .sim-editor {
+        width: 90%;
+        font-family: var(--mono);
+        font-size: 11px;
+        line-height: 1.8;
+        color: #c9d1d9;
+        position: relative;
+      }
+
+      .sim-selection {
+        background: rgba(31, 111, 235, 0.25);
+        border-radius: 2px;
+        padding: 1px 0;
+        animation: selectAnim 4s ease infinite;
+      }
+
+      @keyframes selectAnim {
+        0%,
+        100% {
+          background: rgba(31, 111, 235, 0.25);
+        }
+        50% {
+          background: rgba(31, 111, 235, 0.4);
+        }
+      }
+
+      .sim-popup {
+        position: absolute;
+        bottom: 16px;
+        right: 16px;
+        background: var(--surface-2);
+        border: 1px solid rgba(88, 166, 255, 0.4);
+        border-radius: 8px;
+        padding: 8px 12px;
+        font-family: var(--mono);
+        font-size: 10px;
+        color: var(--primary);
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+        animation:
+          popIn 0.3s ease both,
+          popFloat 3s 0.3s ease infinite;
+      }
+
+      @keyframes popIn {
+        from {
+          opacity: 0;
+          scale: 0.9;
+        }
+        to {
+          opacity: 1;
+          scale: 1;
+        }
+      }
+      @keyframes popFloat {
+        0%,
+        100% {
+          transform: translateY(0);
+        }
+        50% {
+          transform: translateY(-3px);
+        }
+      }
+
+      .demo-info {
+        padding: 20px 24px;
+      }
+
+      .demo-card.featured .demo-info {
+        padding: 32px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+      }
+
+      .demo-num {
+        font-family: var(--mono);
+        font-size: 11px;
+        color: var(--text-dim);
+        margin-bottom: 8px;
+      }
+
+      .demo-title {
+        font-size: 17px;
+        font-weight: 700;
+        margin-bottom: 8px;
+        letter-spacing: -0.01em;
+      }
+
+      .demo-desc {
+        font-size: 14px;
+        color: var(--text-muted);
+        line-height: 1.55;
+      }
+
+      .demo-tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        margin-top: 14px;
+        font-family: var(--mono);
+        font-size: 10.5px;
+        color: var(--green);
+        background: rgba(63, 185, 80, 0.08);
+        border: 1px solid rgba(63, 185, 80, 0.2);
+        border-radius: 100px;
+        padding: 3px 10px;
+      }
+
+      /* ── FEATURES ── */
+      #features {
+        position: relative;
+      }
+
+      .features-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1px;
+        background: var(--border);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        overflow: hidden;
+      }
+
+      .feature-card {
+        background: var(--bg);
+        padding: 32px 28px;
+        transition: background 0.2s;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .feature-card::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(135deg, var(--accent-glow) 0%, transparent 60%);
+        opacity: 0;
+        transition: opacity 0.3s;
+      }
+
+      .feature-card:hover {
+        background: var(--surface);
+      }
+      .feature-card:hover::before {
+        opacity: 1;
+      }
+
+      .feature-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 18px;
+        margin-bottom: 20px;
+        border: 1px solid var(--border-bright);
+        background: var(--surface-2);
+        position: relative;
+        z-index: 1;
+      }
+
+      .feature-name {
+        font-size: 15px;
+        font-weight: 700;
+        margin-bottom: 8px;
+        letter-spacing: -0.01em;
+        position: relative;
+        z-index: 1;
+      }
+
+      .feature-desc {
+        font-size: 13.5px;
+        color: var(--text-muted);
+        line-height: 1.6;
+        position: relative;
+        z-index: 1;
+      }
+
+      /* ── HOW IT WORKS ── */
+      #how {
+        background: var(--bg-2);
+      }
+
+      .steps-layout {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 64px;
+        align-items: center;
+      }
+
+      .steps-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+      }
+
+      .step {
+        display: flex;
+        gap: 20px;
+        padding: 24px 0;
+        border-bottom: 1px solid var(--border);
+        cursor: pointer;
+        transition: all 0.2s;
+        position: relative;
+      }
+
+      .step:last-child {
+        border-bottom: none;
+      }
+
+      .step.active .step-num {
+        color: var(--primary);
+        border-color: var(--accent);
+        background: rgba(31, 111, 235, 0.1);
+      }
+      .step.active .step-title {
+        color: var(--text);
+      }
+
+      .step-num {
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        border: 1px solid var(--border-bright);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: var(--mono);
+        font-size: 12px;
+        color: var(--text-dim);
+        flex-shrink: 0;
+        transition: all 0.2s;
+      }
+
+      .step-content {
+        flex: 1;
+      }
+
+      .step-title {
+        font-size: 16px;
+        font-weight: 600;
+        color: var(--text-muted);
+        margin-bottom: 4px;
+        transition: color 0.2s;
+        letter-spacing: -0.01em;
+      }
+
+      .step-desc {
+        font-size: 13.5px;
+        color: var(--text-dim);
+        line-height: 1.6;
+        display: none;
+      }
+
+      .step.active .step-desc {
+        display: block;
+        color: var(--text-muted);
+      }
+
+      .steps-visual {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        overflow: hidden;
+        min-height: 400px;
+        position: relative;
+      }
+
+      .visual-bar {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 14px 18px;
+        border-bottom: 1px solid var(--border);
+        background: var(--surface-2);
+        font-family: var(--mono);
+        font-size: 12px;
+        color: var(--text-dim);
+      }
+
+      .visual-content {
+        padding: 24px;
+        font-family: var(--mono);
+        font-size: 12.5px;
+      }
+
+      .vc-select {
+        background: rgba(31, 111, 235, 0.15);
+        border: 1px solid rgba(31, 111, 235, 0.3);
+        border-radius: 4px;
+        padding: 6px 10px;
+        margin: 6px 0;
+        color: var(--text);
+      }
+
+      .vc-command {
+        margin-top: 20px;
+        padding: 10px 14px;
+        background: var(--bg);
+        border-radius: 8px;
+        border: 1px solid var(--border-bright);
+        color: var(--primary);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .vc-command::before {
+        content: ">";
+        color: var(--text-dim);
+      }
+
+      .vc-input-row {
+        margin-top: 12px;
+        padding: 10px 14px;
+        background: var(--bg);
+        border: 1px solid var(--accent);
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--text);
+      }
+
+      .vc-cursor {
+        width: 2px;
+        height: 14px;
+        background: var(--primary);
+        animation: blink 1s step-end infinite;
+      }
+
+      @keyframes blink {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0;
+        }
+      }
+
+      .vc-task-list {
+        margin-top: 16px;
+      }
+      .vc-task-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 0;
+        border-bottom: 1px solid var(--border);
+        color: var(--text);
+        font-size: 12px;
+      }
+
+      .vc-badge {
+        font-size: 10px;
+        padding: 2px 7px;
+        border-radius: 4px;
+        margin-left: auto;
+        font-weight: 500;
+      }
+      .badge-open {
+        background: rgba(63, 185, 80, 0.1);
+        color: var(--green);
+        border: 1px solid rgba(63, 185, 80, 0.2);
+      }
+      .badge-review {
+        background: rgba(227, 179, 65, 0.1);
+        color: var(--orange);
+        border: 1px solid rgba(227, 179, 65, 0.2);
+      }
+      .badge-done {
+        background: rgba(88, 166, 255, 0.1);
+        color: var(--primary);
+        border: 1px solid rgba(88, 166, 255, 0.2);
+      }
+
+      /* ── INSTALL ── */
+      #install {
+        position: relative;
+      }
+
+      .install-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 20px;
+      }
+
+      .install-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: 28px;
+        transition: border-color 0.2s;
+      }
+
+      .install-card:hover {
+        border-color: var(--border-bright);
+      }
+
+      .install-num {
+        font-family: var(--mono);
+        font-size: 11px;
+        color: var(--primary);
+        margin-bottom: 12px;
+      }
+
+      .install-title {
+        font-size: 16px;
+        font-weight: 700;
+        margin-bottom: 8px;
+        letter-spacing: -0.01em;
+      }
+
+      .install-desc {
+        font-size: 13px;
+        color: var(--text-muted);
+        margin-bottom: 20px;
+        line-height: 1.6;
+      }
+
+      .code-block {
+        background: var(--bg);
+        border: 1px solid var(--border-bright);
+        border-radius: 9px;
+        padding: 14px 16px;
+        font-family: var(--mono);
+        font-size: 12px;
+        color: #a5d6ff;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .code-block .copy-btn {
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        background: var(--surface);
+        border: 1px solid var(--border-bright);
+        border-radius: 5px;
+        padding: 3px 8px;
+        font-family: var(--mono);
+        font-size: 10px;
+        color: var(--text-dim);
+        cursor: pointer;
+        transition: all 0.15s;
+      }
+
+      .code-block .copy-btn:hover {
+        color: var(--text);
+        border-color: var(--text-dim);
+      }
+
+      .install-steps-list {
+        list-style: none;
+        margin-top: 14px;
+      }
+      .install-steps-list li {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        padding: 6px 0;
+        font-size: 13px;
+        color: var(--text-muted);
+        border-bottom: 1px solid var(--border);
+      }
+      .install-steps-list li:last-child {
+        border-bottom: none;
+      }
+      .step-li-num {
+        font-family: var(--mono);
+        font-size: 10px;
+        color: var(--primary);
+        min-width: 18px;
+        padding-top: 2px;
+      }
+
+      /* ── GITHUB SECTION ── */
+      #github {
+        background: var(--bg-2);
+        text-align: center;
+      }
+
+      .github-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 20px;
+        padding: 64px 48px;
+        max-width: 680px;
+        margin: 0 auto;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .github-card::before {
+        content: "";
+        position: absolute;
+        top: -60px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 400px;
+        height: 400px;
+        background: radial-gradient(ellipse, rgba(88, 166, 255, 0.06) 0%, transparent 70%);
+        pointer-events: none;
+      }
+
+      .github-logo {
+        width: 56px;
+        height: 56px;
+        margin: 0 auto 24px;
+        background: var(--surface-2);
+        border: 1px solid var(--border-bright);
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .github-logo svg {
+        width: 32px;
+        height: 32px;
+        fill: var(--text);
+      }
+
+      .github-card h2 {
+        font-size: 28px;
+        font-weight: 800;
+        letter-spacing: -0.025em;
+        margin-bottom: 12px;
+      }
+
+      .github-card p {
+        font-size: 15px;
+        color: var(--text-muted);
+        margin-bottom: 32px;
+        max-width: 440px;
+        margin-left: auto;
+        margin-right: auto;
+      }
+
+      .github-stats {
+        display: flex;
+        justify-content: center;
+        gap: 24px;
+        margin-bottom: 36px;
+      }
+
+      .stat-pill {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        padding: 7px 16px;
+        background: var(--bg);
+        border: 1px solid var(--border-bright);
+        border-radius: 100px;
+        font-family: var(--mono);
+        font-size: 12px;
+        color: var(--text-muted);
+      }
+
+      .stat-pill span {
+        color: var(--text);
+        font-weight: 600;
+      }
+
+      .github-btns {
+        display: flex;
+        gap: 12px;
+        justify-content: center;
+        flex-wrap: wrap;
+      }
+      .github-btns .btn {
+        font-size: 14.5px;
+        padding: 10px 22px;
+      }
+
+      /* ── FOOTER ── */
+      footer {
+        border-top: 1px solid var(--border);
+        padding: 36px 24px;
+      }
+
+      .footer-inner {
+        max-width: 1080px;
+        margin: 0 auto;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 24px;
+        flex-wrap: wrap;
+      }
+
+      .footer-logo {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--text);
+      }
+
+      .footer-links {
+        display: flex;
+        gap: 4px;
+      }
+
+      .footer-links a {
+        color: var(--text-dim);
+        font-size: 13px;
+        text-decoration: none;
+        padding: 5px 12px;
+        border-radius: 6px;
+        transition:
+          color 0.15s,
+          background 0.15s;
+        font-weight: 400;
+      }
+
+      .footer-links a:hover {
+        color: var(--text);
+        background: var(--surface);
+      }
+
+      .footer-copy {
+        font-family: var(--mono);
+        font-size: 11.5px;
+        color: var(--text-dim);
+      }
+
+      /* ── ANIMATIONS ── */
+      @keyframes fadeUp {
+        from {
+          opacity: 0;
+          transform: translateY(16px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .reveal {
+        opacity: 0;
+        transform: translateY(20px);
+        transition:
+          opacity 0.6s ease,
+          transform 0.6s ease;
+      }
+
+      .reveal.visible {
+        opacity: 1;
+        transform: translateY(0);
+      }
+
+      .reveal-delay-1 {
+        transition-delay: 0.1s;
+      }
+      .reveal-delay-2 {
+        transition-delay: 0.2s;
+      }
+      .reveal-delay-3 {
+        transition-delay: 0.3s;
+      }
+
+      /* ── DIVIDER ── */
+      .divider {
+        max-width: 1080px;
+        margin: 0 auto;
+        height: 1px;
+        background: linear-gradient(90deg, transparent, var(--border), transparent);
+      }
+
+      /* ── RESPONSIVE ── */
+      @media (max-width: 768px) {
+        nav {
+          padding: 0 16px;
+        }
+        nav ul {
+          display: none;
+        }
+        .terminal-body {
+          grid-template-columns: 1fr;
+        }
+        .editor-panel {
+          border-right: none;
+          border-bottom: 1px solid var(--border);
+          padding-right: 0;
+          padding-bottom: 20px;
+          margin-bottom: 20px;
+        }
+        .tasks-panel {
+          padding-left: 0;
+        }
+        .demo-grid {
+          grid-template-columns: 1fr;
+        }
+        .demo-card.featured {
+          grid-template-columns: 1fr;
+        }
+        .features-grid {
+          grid-template-columns: 1fr;
+        }
+        .steps-layout {
+          grid-template-columns: 1fr;
+        }
+        .install-grid {
+          grid-template-columns: 1fr;
+        }
+        .github-stats {
+          flex-direction: column;
+          align-items: center;
+        }
+        .footer-inner {
+          flex-direction: column;
+          text-align: center;
+        }
+        .hero-actions .btn {
+          padding: 10px 18px;
+          font-size: 14px;
+        }
+      }
+
+      /* ── CUSTOM SCROLLBAR ── */
+      ::-webkit-scrollbar {
+        width: 8px;
+      }
+      ::-webkit-scrollbar-track {
+        background: var(--bg);
+      }
+      ::-webkit-scrollbar-thumb {
+        background: var(--border-bright);
+        border-radius: 4px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: var(--text-dim);
+      }
+    </style>
+  </head>
+  <body>
+    <!-- ── NAV ── -->
+    <nav>
+      <a href="#" class="nav-logo">
+        <div class="logo-icon">DT</div>
+        DevTasks
+      </a>
+      <ul class="nav-links">
+        <li><a href="#demo">Demo</a></li>
+        <li><a href="#features">Features</a></li>
+        <li><a href="#how">How it works</a></li>
+        <li><a href="#install">Install</a></li>
+        <li><a href="#github">GitHub</a></li>
+      </ul>
+      <div class="nav-cta">
+        <a href="https://github.com/amankumar430206/devtasks" target="_blank" class="star-badge">
+          ⭐ <span id="star-count">1.2k</span>
+        </a>
+        <a href="https://github.com/amankumar430206/devtasks/releases" class="btn btn-primary" target="_blank">
+          ↓ Download
+        </a>
       </div>
-      <div class="terminal-body">
-        <div class="editor-panel">
-          <div class="panel-label">Editor</div>
-          <div class="code-line"><span class="line-num">12</span><span class="code-text"><span class="code-kw">async</span> <span class="code-fn">validateToken</span>(<span class="code-text">token</span>: <span class="code-str">string</span>) {</span></div>
-          <div class="code-line"><span class="line-num">13</span><span class="code-text">&nbsp;&nbsp;<span class="code-kw">const</span> payload = <span class="code-kw">await</span> <span class="code-fn">jwt.verify</span>(</span></div>
-          <div class="code-line task-highlight"><span class="line-num">14</span><span class="code-text">&nbsp;&nbsp;&nbsp;&nbsp;token, <span class="code-str">process.env.JWT_SECRET</span></span></div>
-          <div class="code-line task-highlight"><span class="line-num">15</span><span class="code-text">&nbsp;&nbsp;);</span></div>
-          <div class="code-line"><span class="line-num">16</span><span class="code-text">&nbsp;&nbsp;<span class="code-cm">// TODO: add refresh token logic</span></span></div>
-          <div class="code-line"><span class="line-num">17</span><span class="code-text">&nbsp;&nbsp;<span class="code-kw">return</span> payload;</span></div>
-          <div class="code-line"><span class="line-num">18</span><span class="code-text">}</span></div>
+    </nav>
 
-          <div class="task-tooltip">
-            <div class="tooltip-label">DevTasks</div>
-            <div class="tooltip-action">⌘ Create task from selection</div>
+    <!-- ── HERO ── -->
+    <section class="hero" id="hero">
+      <div class="grid-bg"></div>
+      <div class="hero-glow"></div>
+
+      <div class="hero-badge">
+        <span class="badge-dot"></span>
+        Now available for VS Code
+      </div>
+
+      <h1>Tasks that live<br /><em>inside your code.</em></h1>
+
+      <p class="hero-sub">
+        Stop switching between tools. Create, review, and assign tasks directly in VS Code — where the work actually
+        happens.
+      </p>
+
+      <div class="hero-actions">
+        <a href="https://github.com/amankumar430206/devtasks" target="_blank" class="btn btn-ghost">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+            <path
+              d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"
+            />
+          </svg>
+          View on GitHub
+        </a>
+        <a href="https://github.com/amankumar430206/devtasks/releases" target="_blank" class="btn btn-primary">
+          ↓ Download Extension
+        </a>
+      </div>
+
+      <p class="hero-meta">Free &amp; open-source · Works with VS Code 1.70+</p>
+
+      <!-- Terminal Preview -->
+      <div class="hero-terminal">
+        <div class="terminal-window">
+          <div class="terminal-bar">
+            <div class="terminal-dot td-red"></div>
+            <div class="terminal-dot td-yellow"></div>
+            <div class="terminal-dot td-green"></div>
+            <span class="terminal-title">authService.ts — DevTasks</span>
           </div>
-        </div>
-        <div class="tasks-panel">
-          <div class="panel-label">Tasks · 4 open</div>
+          <div class="terminal-body">
+            <div class="editor-panel">
+              <div class="panel-label">Editor</div>
+              <div class="code-line">
+                <span class="line-num">12</span
+                ><span class="code-text"
+                  ><span class="code-kw">async</span> <span class="code-fn">validateToken</span>(<span class="code-text"
+                    >token</span
+                  >: <span class="code-str">string</span>) {</span
+                >
+              </div>
+              <div class="code-line">
+                <span class="line-num">13</span
+                ><span class="code-text"
+                  >&nbsp;&nbsp;<span class="code-kw">const</span> payload = <span class="code-kw">await</span>
+                  <span class="code-fn">jwt.verify</span>(</span
+                >
+              </div>
+              <div class="code-line task-highlight">
+                <span class="line-num">14</span
+                ><span class="code-text"
+                  >&nbsp;&nbsp;&nbsp;&nbsp;token, <span class="code-str">process.env.JWT_SECRET</span></span
+                >
+              </div>
+              <div class="code-line task-highlight">
+                <span class="line-num">15</span><span class="code-text">&nbsp;&nbsp;);</span>
+              </div>
+              <div class="code-line">
+                <span class="line-num">16</span
+                ><span class="code-text"
+                  >&nbsp;&nbsp;<span class="code-cm">// TODO: add refresh token logic</span></span
+                >
+              </div>
+              <div class="code-line">
+                <span class="line-num">17</span
+                ><span class="code-text">&nbsp;&nbsp;<span class="code-kw">return</span> payload;</span>
+              </div>
+              <div class="code-line"><span class="line-num">18</span><span class="code-text">}</span></div>
 
-          <div class="task-item active">
-            <div class="task-check"></div>
-            <div class="task-text-wrap">
-              <div class="task-title">Add refresh token logic</div>
-              <div class="task-meta">
-                <span class="task-file">authService.ts:16</span>
-                <span>· @you</span>
+              <div class="task-tooltip">
+                <div class="tooltip-label">DevTasks</div>
+                <div class="tooltip-action">⌘ Create task from selection</div>
               </div>
             </div>
-            <div class="task-avatar" style="background:#1F6FEB">Y</div>
-          </div>
+            <div class="tasks-panel">
+              <div class="panel-label">Tasks · 4 open</div>
 
-          <div class="task-item">
-            <div class="task-check"></div>
-            <div class="task-text-wrap">
-              <div class="task-title">Handle 401 edge case</div>
-              <div class="task-meta">
-                <span class="task-file">middleware.ts:42</span>
-                <span>· @alice</span>
-              </div>
-            </div>
-            <div class="task-avatar" style="background:#3fb950">A</div>
-          </div>
-
-          <div class="task-item">
-            <div class="task-check done">
-              <svg width="8" height="8" viewBox="0 0 10 10" fill="none">
-                <path d="M2 5l2.5 2.5L8 3" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-            </div>
-            <div class="task-text-wrap">
-              <div class="task-title strikethrough">Set up JWT secret env</div>
-              <div class="task-meta"><span class="task-file">authService.ts:14</span></div>
-            </div>
-          </div>
-
-          <div class="task-item">
-            <div class="task-check"></div>
-            <div class="task-text-wrap">
-              <div class="task-title">Rate limit login endpoint</div>
-              <div class="task-meta">
-                <span class="task-file">routes/auth.ts:8</span>
-                <span>· @bob</span>
-              </div>
-            </div>
-            <div class="task-avatar" style="background:#bc8cff">B</div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- Brand bar -->
-<div class="brand-bar">
-  <div class="brand-scroll">
-    <span class="brand-item">Inline task creation</span>
-    <span class="brand-item">Jump to code</span>
-    <span class="brand-item">Batch assignment</span>
-    <span class="brand-item">Review workflows</span>
-    <span class="brand-item">Git-based collaboration</span>
-    <span class="brand-item">File-linked navigation</span>
-    <span class="brand-item">Zero context switching</span>
-    <span class="brand-item">Open source</span>
-    <!-- dup for infinite -->
-    <span class="brand-item">Inline task creation</span>
-    <span class="brand-item">Jump to code</span>
-    <span class="brand-item">Batch assignment</span>
-    <span class="brand-item">Review workflows</span>
-    <span class="brand-item">Git-based collaboration</span>
-    <span class="brand-item">File-linked navigation</span>
-    <span class="brand-item">Zero context switching</span>
-    <span class="brand-item">Open source</span>
-  </div>
-</div>
-
-<!-- ── DEMO ── -->
-<section id="demo">
-  <div class="section-inner">
-    <div class="section-tag reveal">Demo</div>
-    <h2 class="section-title reveal reveal-delay-1">See it in action.</h2>
-    <p class="section-sub reveal reveal-delay-2">
-      Jira is great. Until you open your code.
-    </p>
-
-    <div class="demo-grid reveal reveal-delay-3">
-
-      <!-- Featured: Create task -->
-      <div class="demo-card featured">
-        <div class="demo-gif-area">
-          <div class="gif-placeholder">
-            <div class="sim-editor">
-              <div style="color:var(--text-dim); margin-bottom:8px; font-size:10px;">payment.service.ts</div>
-              <div style="color:#ff7b72;">async</div>
-              <div><span style="color:#d2a8ff;">processPayment</span><span style="color:#c9d1d9;">(amount: </span><span style="color:#79c0ff;">number</span><span style="color:#c9d1d9;">) {</span></div>
-              <div class="sim-selection">&nbsp;&nbsp;// validate amount before processing</div>
-              <div>&nbsp;&nbsp;<span style="color:#ff7b72;">const</span> result = <span style="color:#ff7b72;">await</span> <span style="color:#d2a8ff;">stripe.charge</span>(amount);</div>
-              <div>&nbsp;&nbsp;<span style="color:#ff7b72;">return</span> result;</div>
-              <div>}</div>
-            </div>
-            <div class="sim-popup">⌘ T — Create task from selection</div>
-          </div>
-        </div>
-        <div class="demo-info">
-          <div class="demo-num">01 / 04</div>
-          <div class="demo-title">Select code → Create task</div>
-          <div class="demo-desc">
-            Highlight any line or block of code, hit <code style="font-family:var(--mono); background:var(--surface-2); padding:2px 6px; border-radius:4px; font-size:12px; color:var(--primary)">⌘ T</code>, and a task is born — pinned to that exact location in the file.
-          </div>
-          <div class="demo-tag">
-            <span style="width:6px;height:6px;border-radius:50%;background:var(--green);display:inline-block;"></span>
-            No more copy-pasting file names
-          </div>
-        </div>
-      </div>
-
-      <!-- 2: Jump to code -->
-      <div class="demo-card">
-        <div class="demo-gif-area">
-          <div class="gif-placeholder">
-            <div class="sim-editor" style="width:80%;">
-              <div style="margin-bottom:12px;">
-                <div class="task-item" style="margin-bottom:6px; cursor:pointer;">
-                  <div class="task-check"></div>
-                  <div class="task-text-wrap">
-                    <div class="task-title" style="font-size:11px;">Add input validation</div>
-                    <div class="task-meta"><span class="task-file">api/users.ts:23</span></div>
+              <div class="task-item active">
+                <div class="task-check"></div>
+                <div class="task-text-wrap">
+                  <div class="task-title">Add refresh token logic</div>
+                  <div class="task-meta">
+                    <span class="task-file">authService.ts:16</span>
+                    <span>· @you</span>
                   </div>
                 </div>
-                <div style="font-family:var(--mono); font-size:10px; color:var(--primary); padding:8px 12px; background:rgba(31,111,235,0.1); border-radius:6px; border:1px solid rgba(31,111,235,0.25); animation:popFloat 3s ease infinite;">
-                  → Jumping to api/users.ts line 23…
+                <div class="task-avatar" style="background: #1f6feb">Y</div>
+              </div>
+
+              <div class="task-item">
+                <div class="task-check"></div>
+                <div class="task-text-wrap">
+                  <div class="task-title">Handle 401 edge case</div>
+                  <div class="task-meta">
+                    <span class="task-file">middleware.ts:42</span>
+                    <span>· @alice</span>
+                  </div>
                 </div>
+                <div class="task-avatar" style="background: #3fb950">A</div>
+              </div>
+
+              <div class="task-item">
+                <div class="task-check done">
+                  <svg width="8" height="8" viewBox="0 0 10 10" fill="none">
+                    <path
+                      d="M2 5l2.5 2.5L8 3"
+                      stroke="white"
+                      stroke-width="1.5"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                </div>
+                <div class="task-text-wrap">
+                  <div class="task-title strikethrough">Set up JWT secret env</div>
+                  <div class="task-meta"><span class="task-file">authService.ts:14</span></div>
+                </div>
+              </div>
+
+              <div class="task-item">
+                <div class="task-check"></div>
+                <div class="task-text-wrap">
+                  <div class="task-title">Rate limit login endpoint</div>
+                  <div class="task-meta">
+                    <span class="task-file">routes/auth.ts:8</span>
+                    <span>· @bob</span>
+                  </div>
+                </div>
+                <div class="task-avatar" style="background: #bc8cff">B</div>
               </div>
             </div>
           </div>
         </div>
-        <div class="demo-info">
-          <div class="demo-num">02 / 04</div>
-          <div class="demo-title">Click → Jump to code</div>
-          <div class="demo-desc">Every task links to its file and line. One click teleports you there instantly.</div>
+      </div>
+    </section>
+
+    <!-- Brand bar -->
+    <div class="brand-bar">
+      <div class="brand-scroll">
+        <span class="brand-item">Inline task creation</span>
+        <span class="brand-item">Jump to code</span>
+        <span class="brand-item">Batch assignment</span>
+        <span class="brand-item">Review workflows</span>
+        <span class="brand-item">Git-based collaboration</span>
+        <span class="brand-item">File-linked navigation</span>
+        <span class="brand-item">Zero context switching</span>
+        <span class="brand-item">Open source</span>
+        <!-- dup for infinite -->
+        <span class="brand-item">Inline task creation</span>
+        <span class="brand-item">Jump to code</span>
+        <span class="brand-item">Batch assignment</span>
+        <span class="brand-item">Review workflows</span>
+        <span class="brand-item">Git-based collaboration</span>
+        <span class="brand-item">File-linked navigation</span>
+        <span class="brand-item">Zero context switching</span>
+        <span class="brand-item">Open source</span>
+      </div>
+    </div>
+
+    <!-- ── DEMO ── -->
+    <section id="demo">
+      <div class="section-inner">
+        <div class="section-tag reveal">Demo</div>
+        <h2 class="section-title reveal reveal-delay-1">See it in action.</h2>
+        <p class="section-sub reveal reveal-delay-2">Jira is great. Until you open your code.</p>
+
+        <div class="demo-grid reveal reveal-delay-3">
+          <!-- Featured: Create task -->
+          <div class="demo-card featured">
+            <div class="demo-gif-area">
+              <div class="gif-placeholder">
+                <div class="sim-editor">
+                  <div style="color: var(--text-dim); margin-bottom: 8px; font-size: 10px">payment.service.ts</div>
+                  <div style="color: #ff7b72">async</div>
+                  <div>
+                    <span style="color: #d2a8ff">processPayment</span><span style="color: #c9d1d9">(amount: </span
+                    ><span style="color: #79c0ff">number</span><span style="color: #c9d1d9">) {</span>
+                  </div>
+                  <div class="sim-selection">&nbsp;&nbsp;// validate amount before processing</div>
+                  <div>
+                    &nbsp;&nbsp;<span style="color: #ff7b72">const</span> result =
+                    <span style="color: #ff7b72">await</span> <span style="color: #d2a8ff">stripe.charge</span>(amount);
+                  </div>
+                  <div>&nbsp;&nbsp;<span style="color: #ff7b72">return</span> result;</div>
+                  <div>}</div>
+                </div>
+                <div class="sim-popup">⌘ T — Create task from selection</div>
+              </div>
+            </div>
+            <div class="demo-info">
+              <div class="demo-num">01 / 04</div>
+              <div class="demo-title">Select code → Create task</div>
+              <div class="demo-desc">
+                Highlight any line or block of code, hit
+                <code
+                  style="
+                    font-family: var(--mono);
+                    background: var(--surface-2);
+                    padding: 2px 6px;
+                    border-radius: 4px;
+                    font-size: 12px;
+                    color: var(--primary);
+                  "
+                  >⌘ T</code
+                >, and a task is born — pinned to that exact location in the file.
+              </div>
+              <div class="demo-tag">
+                <span
+                  style="width: 6px; height: 6px; border-radius: 50%; background: var(--green); display: inline-block"
+                ></span>
+                No more copy-pasting file names
+              </div>
+            </div>
+          </div>
+
+          <!-- 2: Jump to code -->
+          <div class="demo-card">
+            <div class="demo-gif-area">
+              <div class="gif-placeholder">
+                <div class="sim-editor" style="width: 80%">
+                  <div style="margin-bottom: 12px">
+                    <div class="task-item" style="margin-bottom: 6px; cursor: pointer">
+                      <div class="task-check"></div>
+                      <div class="task-text-wrap">
+                        <div class="task-title" style="font-size: 11px">Add input validation</div>
+                        <div class="task-meta"><span class="task-file">api/users.ts:23</span></div>
+                      </div>
+                    </div>
+                    <div
+                      style="
+                        font-family: var(--mono);
+                        font-size: 10px;
+                        color: var(--primary);
+                        padding: 8px 12px;
+                        background: rgba(31, 111, 235, 0.1);
+                        border-radius: 6px;
+                        border: 1px solid rgba(31, 111, 235, 0.25);
+                        animation: popFloat 3s ease infinite;
+                      "
+                    >
+                      → Jumping to api/users.ts line 23…
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="demo-info">
+              <div class="demo-num">02 / 04</div>
+              <div class="demo-title">Click → Jump to code</div>
+              <div class="demo-desc">
+                Every task links to its file and line. One click teleports you there instantly.
+              </div>
+            </div>
+          </div>
+
+          <!-- 3: Review flow -->
+          <div class="demo-card">
+            <div class="demo-gif-area">
+              <div class="gif-placeholder">
+                <div class="sim-editor" style="width: 80%">
+                  <div style="font-family: var(--mono); font-size: 10px; color: var(--text-dim); margin-bottom: 10px">
+                    Batch Review Mode
+                  </div>
+                  <div
+                    class="vc-task-row"
+                    style="
+                      font-size: 11px;
+                      display: flex;
+                      align-items: center;
+                      gap: 8px;
+                      padding: 6px 0;
+                      border-bottom: 1px solid var(--border);
+                      color: var(--text);
+                    "
+                  >
+                    <input type="checkbox" checked readonly style="accent-color: var(--primary)" /> Fix auth middleware
+                    <div class="vc-badge badge-review" style="margin-left: auto">review</div>
+                  </div>
+                  <div
+                    class="vc-task-row"
+                    style="
+                      font-size: 11px;
+                      display: flex;
+                      align-items: center;
+                      gap: 8px;
+                      padding: 6px 0;
+                      border-bottom: 1px solid var(--border);
+                      color: var(--text);
+                    "
+                  >
+                    <input type="checkbox" checked readonly style="accent-color: var(--primary)" /> Add rate limiting
+                    <div class="vc-badge badge-review" style="margin-left: auto">review</div>
+                  </div>
+                  <div
+                    class="vc-task-row"
+                    style="
+                      font-size: 11px;
+                      display: flex;
+                      align-items: center;
+                      gap: 8px;
+                      padding: 6px 0;
+                      color: var(--text);
+                    "
+                  >
+                    <input type="checkbox" readonly style="accent-color: var(--primary)" /> Update docs
+                    <div class="vc-badge badge-open" style="margin-left: auto">open</div>
+                  </div>
+                  <div
+                    style="
+                      margin-top: 12px;
+                      font-family: var(--mono);
+                      font-size: 10px;
+                      color: var(--green);
+                      padding: 6px 10px;
+                      background: rgba(63, 185, 80, 0.08);
+                      border-radius: 6px;
+                      border: 1px solid rgba(63, 185, 80, 0.2);
+                    "
+                  >
+                    ✓ 2 tasks marked for review
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="demo-info">
+              <div class="demo-num">03 / 04</div>
+              <div class="demo-title">Batch review flow</div>
+              <div class="demo-desc">
+                Select multiple tasks, change status in one shot. Sprint ceremonies in seconds.
+              </div>
+            </div>
+          </div>
+
+          <!-- 4: Assign -->
+          <div class="demo-card">
+            <div class="demo-gif-area">
+              <div class="gif-placeholder">
+                <div class="sim-editor" style="width: 80%">
+                  <div style="font-family: var(--mono); font-size: 10px; color: var(--text-dim); margin-bottom: 10px">
+                    Assign · "Fix auth bug"
+                  </div>
+                  <div style="display: flex; flex-direction: column; gap: 6px">
+                    <div
+                      style="
+                        display: flex;
+                        align-items: center;
+                        gap: 8px;
+                        padding: 8px;
+                        background: rgba(31, 111, 235, 0.1);
+                        border: 1px solid rgba(31, 111, 235, 0.3);
+                        border-radius: 7px;
+                      "
+                    >
+                      <div class="task-avatar" style="background: #1f6feb; width: 22px; height: 22px; font-size: 10px">
+                        Y
+                      </div>
+                      <div style="font-size: 12px; color: var(--text)">you</div>
+                      <svg
+                        style="margin-left: auto; color: var(--primary)"
+                        width="14"
+                        height="14"
+                        viewBox="0 0 24 24"
+                        fill="currentColor"
+                      >
+                        <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
+                      </svg>
+                    </div>
+                    <div
+                      style="
+                        display: flex;
+                        align-items: center;
+                        gap: 8px;
+                        padding: 8px;
+                        background: var(--bg);
+                        border: 1px solid var(--border);
+                        border-radius: 7px;
+                      "
+                    >
+                      <div class="task-avatar" style="background: #3fb950; width: 22px; height: 22px; font-size: 10px">
+                        A
+                      </div>
+                      <div style="font-size: 12px; color: var(--text-muted)">alice</div>
+                    </div>
+                    <div
+                      style="
+                        display: flex;
+                        align-items: center;
+                        gap: 8px;
+                        padding: 8px;
+                        background: var(--bg);
+                        border: 1px solid var(--border);
+                        border-radius: 7px;
+                      "
+                    >
+                      <div class="task-avatar" style="background: #bc8cff; width: 22px; height: 22px; font-size: 10px">
+                        B
+                      </div>
+                      <div style="font-size: 12px; color: var(--text-muted)">bob</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="demo-info">
+              <div class="demo-num">04 / 04</div>
+              <div class="demo-title">Assign tasks to teammates</div>
+              <div class="demo-desc">Pull team members from your git config. Assign without leaving the editor.</div>
+            </div>
+          </div>
         </div>
       </div>
+    </section>
 
-      <!-- 3: Review flow -->
-      <div class="demo-card">
-        <div class="demo-gif-area">
-          <div class="gif-placeholder">
-            <div class="sim-editor" style="width:80%;">
-              <div style="font-family:var(--mono); font-size:10px; color:var(--text-dim); margin-bottom:10px;">Batch Review Mode</div>
-              <div class="vc-task-row" style="font-size:11px; display:flex; align-items:center; gap:8px; padding:6px 0; border-bottom:1px solid var(--border); color:var(--text);">
-                <input type="checkbox" checked readonly style="accent-color:var(--primary)"> Fix auth middleware
-                <div class="vc-badge badge-review" style="margin-left:auto">review</div>
+    <!-- ── FEATURES ── -->
+    <section id="features">
+      <div class="section-inner">
+        <div class="section-tag reveal">Features</div>
+        <h2 class="section-title reveal reveal-delay-1">Everything you need.<br />Nothing you don't.</h2>
+        <p class="section-sub reveal reveal-delay-2">Built for developers who ship fast and hate context switching.</p>
+
+        <div class="features-grid reveal reveal-delay-3">
+          <div class="feature-card">
+            <div class="feature-icon">✏️</div>
+            <div class="feature-name">Inline task creation</div>
+            <div class="feature-desc">
+              Select any code, press a shortcut. Tasks are created exactly where you are, linked to file and line
+              number.
+            </div>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">🔗</div>
+            <div class="feature-name">File-linked navigation</div>
+            <div class="feature-desc">
+              Every task remembers where it lives. Click it, land there. No searching, no digging through tabs.
+            </div>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">🔍</div>
+            <div class="feature-name">Review system</div>
+            <div class="feature-desc">
+              Move tasks through Open → Review → Done with keyboard shortcuts. Your own mini sprint board inside VS
+              Code.
+            </div>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">👥</div>
+            <div class="feature-name">Batch assignment</div>
+            <div class="feature-desc">
+              Multi-select tasks, assign to teammates pulled from your git history. Distribute work in seconds.
+            </div>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">🌿</div>
+            <div class="feature-name">Git-based collaboration</div>
+            <div class="feature-desc">
+              Tasks live in your repo as structured comments. They version with your code, branch with your branches.
+            </div>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">⚡</div>
+            <div class="feature-name">Zero overhead</div>
+            <div class="feature-desc">
+              No cloud account, no subscription, no context switch to a browser tab. Just your editor and your tasks.
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── HOW IT WORKS ── -->
+    <section id="how">
+      <div class="section-inner">
+        <div class="section-tag reveal">How it works</div>
+        <h2 class="section-title reveal reveal-delay-1">From code to done<br />in five steps.</h2>
+
+        <div class="steps-layout reveal reveal-delay-2">
+          <div class="steps-list" id="steps-list">
+            <div class="step active" data-step="0">
+              <div class="step-num">01</div>
+              <div class="step-content">
+                <div class="step-title">Select code → Create task</div>
+                <div class="step-desc">
+                  Highlight a line or block in any file. Hit
+                  <code
+                    style="
+                      font-family: var(--mono);
+                      background: var(--surface-2);
+                      padding: 1px 5px;
+                      border-radius: 3px;
+                      font-size: 12px;
+                    "
+                    >⌘T</code
+                  >
+                  to open the task creation prompt. Type a title and confirm.
+                </div>
               </div>
-              <div class="vc-task-row" style="font-size:11px; display:flex; align-items:center; gap:8px; padding:6px 0; border-bottom:1px solid var(--border); color:var(--text);">
-                <input type="checkbox" checked readonly style="accent-color:var(--primary)"> Add rate limiting
-                <div class="vc-badge badge-review" style="margin-left:auto">review</div>
+            </div>
+            <div class="step" data-step="1">
+              <div class="step-num">02</div>
+              <div class="step-content">
+                <div class="step-title">Review your task list</div>
+                <div class="step-desc">
+                  Open the DevTasks sidebar to see all tasks across your workspace, grouped by file or status.
+                </div>
               </div>
-              <div class="vc-task-row" style="font-size:11px; display:flex; align-items:center; gap:8px; padding:6px 0; color:var(--text);">
-                <input type="checkbox" readonly style="accent-color:var(--primary)"> Update docs
-                <div class="vc-badge badge-open" style="margin-left:auto">open</div>
+            </div>
+            <div class="step" data-step="2">
+              <div class="step-num">03</div>
+              <div class="step-content">
+                <div class="step-title">Move to review</div>
+                <div class="step-desc">
+                  When a task is ready for review, right-click → Mark as Review. Status updates in the sidebar
+                  instantly.
+                </div>
               </div>
-              <div style="margin-top:12px; font-family:var(--mono); font-size:10px; color:var(--green); padding:6px 10px; background:rgba(63,185,80,0.08); border-radius:6px; border:1px solid rgba(63,185,80,0.2);">
-                ✓ 2 tasks marked for review
+            </div>
+            <div class="step" data-step="3">
+              <div class="step-num">04</div>
+              <div class="step-content">
+                <div class="step-title">Assign to a teammate</div>
+                <div class="step-desc">
+                  Select a task, type
+                  <code
+                    style="
+                      font-family: var(--mono);
+                      background: var(--surface-2);
+                      padding: 1px 5px;
+                      border-radius: 3px;
+                      font-size: 12px;
+                    "
+                    >@</code
+                  >
+                  to pick from your git collaborators. Assignment gets saved to the task metadata.
+                </div>
+              </div>
+            </div>
+            <div class="step" data-step="4">
+              <div class="step-num">05</div>
+              <div class="step-content">
+                <div class="step-title">Close it. Ship it.</div>
+                <div class="step-desc">
+                  Mark as Done. The task stays in history, linked to the commit that resolved it. Your future self will
+                  thank you.
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="steps-visual" id="steps-visual">
+            <div class="visual-bar">
+              <div class="terminal-dot td-red"></div>
+              <div class="terminal-dot td-yellow"></div>
+              <div class="terminal-dot td-green"></div>
+              <span style="margin-left: 8px">DevTasks Panel</span>
+            </div>
+            <div class="visual-content" id="step-visual-content">
+              <!-- Step 0 default -->
+              <div style="color: var(--text-dim); font-size: 11px; margin-bottom: 10px">
+                payment.ts — line 14 selected
+              </div>
+              <div style="color: #c9d1d9; margin-bottom: 4px">
+                <span class="code-kw" style="color: #ff7b72">const</span> result =
+                <span style="color: #d2a8ff">stripe.charge</span>(amount);
+              </div>
+              <div class="vc-select">// missing error handling here 🔴</div>
+              <div class="vc-command">DevTasks: New Task</div>
+              <div class="vc-input-row">
+                <span style="color: var(--text)">Add error handling for stripe.charge</span>
+                <div class="vc-cursor"></div>
+              </div>
+              <div style="margin-top: 14px; font-family: var(--mono); font-size: 11px; color: var(--text-dim)">
+                ↵ Confirm &nbsp; Esc Cancel
               </div>
             </div>
           </div>
         </div>
-        <div class="demo-info">
-          <div class="demo-num">03 / 04</div>
-          <div class="demo-title">Batch review flow</div>
-          <div class="demo-desc">Select multiple tasks, change status in one shot. Sprint ceremonies in seconds.</div>
-        </div>
       </div>
+    </section>
 
-      <!-- 4: Assign -->
-      <div class="demo-card">
-        <div class="demo-gif-area">
-          <div class="gif-placeholder">
-            <div class="sim-editor" style="width:80%;">
-              <div style="font-family:var(--mono); font-size:10px; color:var(--text-dim); margin-bottom:10px;">Assign · "Fix auth bug"</div>
-              <div style="display:flex; flex-direction:column; gap:6px;">
-                <div style="display:flex; align-items:center; gap:8px; padding:8px; background:rgba(31,111,235,0.1); border:1px solid rgba(31,111,235,0.3); border-radius:7px;">
-                  <div class="task-avatar" style="background:#1F6FEB; width:22px; height:22px; font-size:10px;">Y</div>
-                  <div style="font-size:12px; color:var(--text);">you</div>
-                  <svg style="margin-left:auto; color:var(--primary);" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
-                </div>
-                <div style="display:flex; align-items:center; gap:8px; padding:8px; background:var(--bg); border:1px solid var(--border); border-radius:7px;">
-                  <div class="task-avatar" style="background:#3fb950; width:22px; height:22px; font-size:10px;">A</div>
-                  <div style="font-size:12px; color:var(--text-muted);">alice</div>
-                </div>
-                <div style="display:flex; align-items:center; gap:8px; padding:8px; background:var(--bg); border:1px solid var(--border); border-radius:7px;">
-                  <div class="task-avatar" style="background:#bc8cff; width:22px; height:22px; font-size:10px;">B</div>
-                  <div style="font-size:12px; color:var(--text-muted);">bob</div>
-                </div>
-              </div>
+    <!-- ── INSTALL ── -->
+    <section id="install">
+      <div class="section-inner">
+        <div class="section-tag reveal">Installation</div>
+        <h2 class="section-title reveal reveal-delay-1">Get running in 30 seconds.</h2>
+        <p class="section-sub reveal reveal-delay-2">Three ways to install. Pick your flavor.</p>
+
+        <div class="install-grid reveal reveal-delay-3">
+          <div class="install-card">
+            <div class="install-num">Option 01</div>
+            <div class="install-title">Download VSIX</div>
+            <div class="install-desc">Grab the latest release from GitHub and install it directly.</div>
+            <a
+              href="https://github.com/amankumar430206/devtasks/releases"
+              target="_blank"
+              class="btn btn-primary"
+              style="margin-bottom: 16px; display: inline-flex"
+              >↓ Download .vsix</a
+            >
+            <ul class="install-steps-list">
+              <li><span class="step-li-num">1.</span> Open VS Code</li>
+              <li><span class="step-li-num">2.</span> Extensions → ··· → Install from VSIX</li>
+              <li><span class="step-li-num">3.</span> Select the downloaded file</li>
+            </ul>
+          </div>
+
+          <div class="install-card">
+            <div class="install-num">Option 02</div>
+            <div class="install-title">Via Command Line</div>
+            <div class="install-desc">
+              If you have the
+              <code
+                style="
+                  font-family: var(--mono);
+                  font-size: 12px;
+                  background: var(--bg);
+                  padding: 2px 6px;
+                  border-radius: 4px;
+                  color: var(--primary);
+                "
+                >code</code
+              >
+              CLI installed, one command does it.
+            </div>
+            <div class="code-block">
+              <button class="copy-btn" onclick="copyCode(this, 'code --install-extension devtasks.vsix')">copy</button>
+              code --install-extension devtasks.vsix
+            </div>
+            <div style="margin-top: 16px; font-size: 13px; color: var(--text-dim)">
+              Restart VS Code once it completes.
+            </div>
+          </div>
+
+          <div class="install-card">
+            <div class="install-num">Option 03</div>
+            <div class="install-title">Dev Mode</div>
+            <div class="install-desc">Want to contribute or hack on it? Run it locally from source.</div>
+            <div class="code-block" style="margin-bottom: 12px">
+              <button
+                class="copy-btn"
+                onclick="
+                  copyCode(this, 'git clone https://github.com/amankumar430206/devtasks.git\ncd devtasks\nnpm install')
+                "
+              >
+                copy
+              </button>
+              git clone https://github.com/amankumar430206/devtasks.git<br />
+              cd devtasks<br />
+              npm install
+            </div>
+            <div style="font-size: 13px; color: var(--text-muted)">
+              Then press
+              <code
+                style="
+                  font-family: var(--mono);
+                  font-size: 12px;
+                  background: var(--bg);
+                  padding: 2px 6px;
+                  border-radius: 4px;
+                  color: var(--orange);
+                "
+                >F5</code
+              >
+              in VS Code to launch Extension Development Host.
             </div>
           </div>
         </div>
-        <div class="demo-info">
-          <div class="demo-num">04 / 04</div>
-          <div class="demo-title">Assign tasks to teammates</div>
-          <div class="demo-desc">Pull team members from your git config. Assign without leaving the editor.</div>
-        </div>
       </div>
+    </section>
 
-    </div>
-  </div>
-</section>
-
-<!-- ── FEATURES ── -->
-<section id="features">
-  <div class="section-inner">
-    <div class="section-tag reveal">Features</div>
-    <h2 class="section-title reveal reveal-delay-1">Everything you need.<br />Nothing you don't.</h2>
-    <p class="section-sub reveal reveal-delay-2">
-      Built for developers who ship fast and hate context switching.
-    </p>
-
-    <div class="features-grid reveal reveal-delay-3">
-      <div class="feature-card">
-        <div class="feature-icon">✏️</div>
-        <div class="feature-name">Inline task creation</div>
-        <div class="feature-desc">Select any code, press a shortcut. Tasks are created exactly where you are, linked to file and line number.</div>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon">🔗</div>
-        <div class="feature-name">File-linked navigation</div>
-        <div class="feature-desc">Every task remembers where it lives. Click it, land there. No searching, no digging through tabs.</div>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon">🔍</div>
-        <div class="feature-name">Review system</div>
-        <div class="feature-desc">Move tasks through Open → Review → Done with keyboard shortcuts. Your own mini sprint board inside VS Code.</div>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon">👥</div>
-        <div class="feature-name">Batch assignment</div>
-        <div class="feature-desc">Multi-select tasks, assign to teammates pulled from your git history. Distribute work in seconds.</div>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon">🌿</div>
-        <div class="feature-name">Git-based collaboration</div>
-        <div class="feature-desc">Tasks live in your repo as structured comments. They version with your code, branch with your branches.</div>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon">⚡</div>
-        <div class="feature-name">Zero overhead</div>
-        <div class="feature-desc">No cloud account, no subscription, no context switch to a browser tab. Just your editor and your tasks.</div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- ── HOW IT WORKS ── -->
-<section id="how">
-  <div class="section-inner">
-    <div class="section-tag reveal">How it works</div>
-    <h2 class="section-title reveal reveal-delay-1">From code to done<br />in five steps.</h2>
-
-    <div class="steps-layout reveal reveal-delay-2">
-      <div class="steps-list" id="steps-list">
-        <div class="step active" data-step="0">
-          <div class="step-num">01</div>
-          <div class="step-content">
-            <div class="step-title">Select code → Create task</div>
-            <div class="step-desc">Highlight a line or block in any file. Hit <code style="font-family:var(--mono); background:var(--surface-2); padding:1px 5px; border-radius:3px; font-size:12px;">⌘T</code> to open the task creation prompt. Type a title and confirm.</div>
+    <!-- ── GITHUB ── -->
+    <section id="github">
+      <div class="section-inner">
+        <div class="github-card reveal">
+          <div class="github-logo">
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path
+                d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"
+              />
+            </svg>
           </div>
-        </div>
-        <div class="step" data-step="1">
-          <div class="step-num">02</div>
-          <div class="step-content">
-            <div class="step-title">Review your task list</div>
-            <div class="step-desc">Open the DevTasks sidebar to see all tasks across your workspace, grouped by file or status.</div>
+
+          <h2>Open source, forever.</h2>
+          <p>
+            DevTasks is free, open source, and always will be. Star it, fork it, contribute — it gets better with every
+            developer who touches it.
+          </p>
+
+          <div class="github-stats">
+            <div class="stat-pill">⭐ <span id="gh-stars">1.2k</span> stars</div>
+            <div class="stat-pill">🍴 <span id="gh-forks">124</span> forks</div>
+            <div class="stat-pill">📦 MIT License</div>
           </div>
-        </div>
-        <div class="step" data-step="2">
-          <div class="step-num">03</div>
-          <div class="step-content">
-            <div class="step-title">Move to review</div>
-            <div class="step-desc">When a task is ready for review, right-click → Mark as Review. Status updates in the sidebar instantly.</div>
-          </div>
-        </div>
-        <div class="step" data-step="3">
-          <div class="step-num">04</div>
-          <div class="step-content">
-            <div class="step-title">Assign to a teammate</div>
-            <div class="step-desc">Select a task, type <code style="font-family:var(--mono); background:var(--surface-2); padding:1px 5px; border-radius:3px; font-size:12px;">@</code> to pick from your git collaborators. Assignment gets saved to the task metadata.</div>
-          </div>
-        </div>
-        <div class="step" data-step="4">
-          <div class="step-num">05</div>
-          <div class="step-content">
-            <div class="step-title">Close it. Ship it.</div>
-            <div class="step-desc">Mark as Done. The task stays in history, linked to the commit that resolved it. Your future self will thank you.</div>
+
+          <div class="github-btns">
+            <a href="https://github.com/amankumar430206/devtasks" target="_blank" class="btn btn-primary">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                <path
+                  d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"
+                />
+              </svg>
+              View Repository
+            </a>
+            <a
+              href="https://github.com/amankumar430206/devtasks/blob/main/CONTRIBUTING.md"
+              target="_blank"
+              class="btn btn-ghost"
+              >Contributing Guide</a
+            >
+            <a
+              href="https://github.com/amankumar430206/devtasks/blob/main/LICENSE"
+              target="_blank"
+              class="btn btn-ghost"
+              >MIT License</a
+            >
           </div>
         </div>
       </div>
+    </section>
 
-      <div class="steps-visual" id="steps-visual">
-        <div class="visual-bar">
-          <div class="terminal-dot td-red"></div>
-          <div class="terminal-dot td-yellow"></div>
-          <div class="terminal-dot td-green"></div>
-          <span style="margin-left:8px;">DevTasks Panel</span>
+    <!-- ── FOOTER ── -->
+    <footer>
+      <div class="footer-inner">
+        <div class="footer-logo">
+          <div class="logo-icon">DT</div>
+          DevTasks
         </div>
-        <div class="visual-content" id="step-visual-content">
-          <!-- Step 0 default -->
-          <div style="color:var(--text-dim); font-size:11px; margin-bottom:10px;">payment.ts — line 14 selected</div>
-          <div style="color:#c9d1d9; margin-bottom:4px;"><span class="code-kw" style="color:#ff7b72;">const</span> result = <span style="color:#d2a8ff;">stripe.charge</span>(amount);</div>
-          <div class="vc-select">// missing error handling here 🔴</div>
-          <div class="vc-command">DevTasks: New Task</div>
-          <div class="vc-input-row">
-            <span style="color:var(--text);">Add error handling for stripe.charge</span>
-            <div class="vc-cursor"></div>
-          </div>
-          <div style="margin-top:14px; font-family:var(--mono); font-size:11px; color:var(--text-dim);">↵ Confirm &nbsp; Esc Cancel</div>
+        <div class="footer-links">
+          <a href="https://github.com/amankumar430206/devtasks" target="_blank">GitHub</a>
+          <a href="https://github.com/amankumar430206/devtasks/blob/main/LICENSE" target="_blank">License</a>
+          <a href="https://github.com/amankumar430206/devtasks/blob/main/CONTRIBUTING.md" target="_blank"
+            >Contributing</a
+          >
+          <a href="https://github.com/amankumar430206/devtasks/releases" target="_blank">Releases</a>
         </div>
+        <div class="footer-copy">Built by devs, for devs · MIT</div>
       </div>
-    </div>
-  </div>
-</section>
+    </footer>
 
-<!-- ── INSTALL ── -->
-<section id="install">
-  <div class="section-inner">
-    <div class="section-tag reveal">Installation</div>
-    <h2 class="section-title reveal reveal-delay-1">Get running in 30 seconds.</h2>
-    <p class="section-sub reveal reveal-delay-2">Three ways to install. Pick your flavor.</p>
+    <script>
+      // ── SCROLL REVEAL ──
+      const revealEls = document.querySelectorAll(".reveal");
+      const observer = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((e) => {
+            if (e.isIntersecting) {
+              e.target.classList.add("visible");
+            }
+          });
+        },
+        { threshold: 0.12 },
+      );
+      revealEls.forEach((el) => observer.observe(el));
 
-    <div class="install-grid reveal reveal-delay-3">
+      // ── STEP INTERACTIVITY ──
+      const steps = document.querySelectorAll(".step");
+      const visualContent = document.getElementById("step-visual-content");
 
-      <div class="install-card">
-        <div class="install-num">Option 01</div>
-        <div class="install-title">Download VSIX</div>
-        <div class="install-desc">Grab the latest release from GitHub and install it directly.</div>
-        <a href="https://github.com/your-username/devtasks/releases" target="_blank" class="btn btn-primary" style="margin-bottom:16px; display:inline-flex;">↓ Download .vsix</a>
-        <ul class="install-steps-list">
-          <li><span class="step-li-num">1.</span> Open VS Code</li>
-          <li><span class="step-li-num">2.</span> Extensions → ··· → Install from VSIX</li>
-          <li><span class="step-li-num">3.</span> Select the downloaded file</li>
-        </ul>
-      </div>
-
-      <div class="install-card">
-        <div class="install-num">Option 02</div>
-        <div class="install-title">Via Command Line</div>
-        <div class="install-desc">If you have the <code style="font-family:var(--mono);font-size:12px;background:var(--bg);padding:2px 6px;border-radius:4px;color:var(--primary)">code</code> CLI installed, one command does it.</div>
-        <div class="code-block">
-          <button class="copy-btn" onclick="copyCode(this, 'code --install-extension devtasks.vsix')">copy</button>
-          code --install-extension devtasks.vsix
-        </div>
-        <div style="margin-top:16px; font-size:13px; color:var(--text-dim);">Restart VS Code once it completes.</div>
-      </div>
-
-      <div class="install-card">
-        <div class="install-num">Option 03</div>
-        <div class="install-title">Dev Mode</div>
-        <div class="install-desc">Want to contribute or hack on it? Run it locally from source.</div>
-        <div class="code-block" style="margin-bottom:12px;">
-          <button class="copy-btn" onclick="copyCode(this, 'git clone https://github.com/your-username/devtasks.git\ncd devtasks\nnpm install')">copy</button>
-          git clone https://github.com/your-username/devtasks.git<br />
-          cd devtasks<br />
-          npm install
-        </div>
-        <div style="font-size:13px; color:var(--text-muted);">Then press <code style="font-family:var(--mono);font-size:12px;background:var(--bg);padding:2px 6px;border-radius:4px;color:var(--orange)">F5</code> in VS Code to launch Extension Development Host.</div>
-      </div>
-
-    </div>
-  </div>
-</section>
-
-<!-- ── GITHUB ── -->
-<section id="github">
-  <div class="section-inner">
-    <div class="github-card reveal">
-      <div class="github-logo">
-        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-          <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
-        </svg>
-      </div>
-
-      <h2>Open source, forever.</h2>
-      <p>DevTasks is free, open source, and always will be. Star it, fork it, contribute — it gets better with every developer who touches it.</p>
-
-      <div class="github-stats">
-        <div class="stat-pill">⭐ <span id="gh-stars">1.2k</span> stars</div>
-        <div class="stat-pill">🍴 <span id="gh-forks">124</span> forks</div>
-        <div class="stat-pill">📦 MIT License</div>
-      </div>
-
-      <div class="github-btns">
-        <a href="https://github.com/your-username/devtasks" target="_blank" class="btn btn-primary">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
-          View Repository
-        </a>
-        <a href="https://github.com/your-username/devtasks/blob/main/CONTRIBUTING.md" target="_blank" class="btn btn-ghost">Contributing Guide</a>
-        <a href="https://github.com/your-username/devtasks/blob/main/LICENSE" target="_blank" class="btn btn-ghost">MIT License</a>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- ── FOOTER ── -->
-<footer>
-  <div class="footer-inner">
-    <div class="footer-logo">
-      <div class="logo-icon">DT</div>
-      DevTasks
-    </div>
-    <div class="footer-links">
-      <a href="https://github.com/your-username/devtasks" target="_blank">GitHub</a>
-      <a href="https://github.com/your-username/devtasks/blob/main/LICENSE" target="_blank">License</a>
-      <a href="https://github.com/your-username/devtasks/blob/main/CONTRIBUTING.md" target="_blank">Contributing</a>
-      <a href="https://github.com/your-username/devtasks/releases" target="_blank">Releases</a>
-    </div>
-    <div class="footer-copy">Built by devs, for devs · MIT</div>
-  </div>
-</footer>
-
-<script>
-// ── SCROLL REVEAL ──
-const revealEls = document.querySelectorAll('.reveal');
-const observer = new IntersectionObserver((entries) => {
-  entries.forEach(e => {
-    if (e.isIntersecting) {
-      e.target.classList.add('visible');
-    }
-  });
-}, { threshold: 0.12 });
-revealEls.forEach(el => observer.observe(el));
-
-// ── STEP INTERACTIVITY ──
-const steps = document.querySelectorAll('.step');
-const visualContent = document.getElementById('step-visual-content');
-
-const stepVisuals = [
-  `<div style="color:var(--text-dim); font-size:11px; margin-bottom:10px;">payment.ts — line 14 selected</div>
+      const stepVisuals = [
+        `<div style="color:var(--text-dim); font-size:11px; margin-bottom:10px;">payment.ts — line 14 selected</div>
    <div style="color:#c9d1d9; margin-bottom:4px;"><span style="color:#ff7b72;">const</span> result = <span style="color:#d2a8ff;">stripe.charge</span>(amount);</div>
    <div style="background:rgba(31,111,235,0.15);border-left:2px solid #1F6FEB;padding:4px 8px;border-radius:0 3px 3px 0;color:#c9d1d9;font-size:12px; margin:4px 0;">// missing error handling here 🔴</div>
    <div style="margin-top:16px;padding:10px 14px;background:var(--bg);border-radius:8px;border:1px solid var(--border-bright);color:var(--primary);display:flex;align-items:center;gap:8px; font-size:12px;"><span style="color:var(--text-dim);">></span> DevTasks: New Task</div>
    <div style="margin-top:10px;padding:10px 14px;background:var(--bg);border:1px solid var(--accent);border-radius:8px;display:flex;align-items:center;gap:8px;color:var(--text); font-size:12px;">Add error handling for stripe.charge <div style="width:2px;height:14px;background:var(--primary);animation:blink 1s step-end infinite;"></div></div>
    <div style="margin-top:14px; font-size:11px; color:var(--text-dim);">↵ Confirm &nbsp; Esc Cancel</div>`,
 
-  `<div style="font-size:11px;color:var(--text-dim);margin-bottom:12px;">All tasks · 4 items</div>
+        `<div style="font-size:11px;color:var(--text-dim);margin-bottom:12px;">All tasks · 4 items</div>
    <div style="display:flex;flex-direction:column;gap:6px;">
      <div style="padding:10px 12px;border:1px solid rgba(31,111,235,0.4);border-radius:7px;background:rgba(31,111,235,0.05);font-size:12px;">
        <div style="color:var(--text);">Add error handling for stripe.charge</div>
@@ -1723,7 +2276,7 @@ const stepVisuals = [
      </div>
    </div>`,
 
-  `<div style="font-size:11px;color:var(--text-dim);margin-bottom:12px;">Right-click → Mark as Review</div>
+        `<div style="font-size:11px;color:var(--text-dim);margin-bottom:12px;">Right-click → Mark as Review</div>
    <div style="background:var(--bg);border:1px solid var(--border-bright);border-radius:9px;overflow:hidden;">
      <div style="padding:10px 14px;border-bottom:1px solid var(--border);font-size:12px;display:flex;align-items:center;gap:8px;">
        <div style="width:8px;height:8px;border-radius:50%;background:var(--orange);"></div>
@@ -1734,7 +2287,7 @@ const stepVisuals = [
    </div>
    <div style="margin-top:14px;padding:8px 12px;background:rgba(227,179,65,0.08);border:1px solid rgba(227,179,65,0.2);border-radius:7px;font-size:11px;color:var(--orange);">● Status updated → Review</div>`,
 
-  `<div style="font-size:11px;color:var(--text-dim);margin-bottom:12px;">Assign "Add error handling…"</div>
+        `<div style="font-size:11px;color:var(--text-dim);margin-bottom:12px;">Assign "Add error handling…"</div>
    <div style="display:flex;flex-direction:column;gap:6px;">
      <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:rgba(31,111,235,0.1);border:1px solid rgba(31,111,235,0.3);border-radius:7px;">
        <div style="width:22px;height:22px;border-radius:50%;background:#1F6FEB;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;color:white;">Y</div>
@@ -1751,7 +2304,7 @@ const stepVisuals = [
      </div>
    </div>`,
 
-  `<div style="font-size:11px;color:var(--text-dim);margin-bottom:12px;">Task history</div>
+        `<div style="font-size:11px;color:var(--text-dim);margin-bottom:12px;">Task history</div>
    <div style="display:flex;flex-direction:column;gap:6px;">
      <div style="padding:10px 12px;border:1px solid rgba(63,185,80,0.3);border-radius:7px;background:rgba(63,185,80,0.05);display:flex;align-items:center;gap:8px;">
        <svg width="14" height="14" viewBox="0 0 24 24" fill="#3fb950"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
@@ -1768,57 +2321,56 @@ const stepVisuals = [
        </div>
      </div>
    </div>
-   <div style="margin-top:14px;font-size:11px;color:var(--text-dim);">Tasks live with your commits. 🚀</div>`
-];
+   <div style="margin-top:14px;font-size:11px;color:var(--text-dim);">Tasks live with your commits. 🚀</div>`,
+      ];
 
-steps.forEach((step, i) => {
-  step.addEventListener('click', () => {
-    steps.forEach(s => s.classList.remove('active'));
-    step.classList.add('active');
-    visualContent.innerHTML = stepVisuals[i];
-  });
-});
+      steps.forEach((step, i) => {
+        step.addEventListener("click", () => {
+          steps.forEach((s) => s.classList.remove("active"));
+          step.classList.add("active");
+          visualContent.innerHTML = stepVisuals[i];
+        });
+      });
 
-// Auto rotate steps
-let currentStep = 0;
-setInterval(() => {
-  currentStep = (currentStep + 1) % steps.length;
-  steps.forEach(s => s.classList.remove('active'));
-  steps[currentStep].classList.add('active');
-  visualContent.innerHTML = stepVisuals[currentStep];
-}, 3500);
+      // Auto rotate steps
+      let currentStep = 0;
+      setInterval(() => {
+        currentStep = (currentStep + 1) % steps.length;
+        steps.forEach((s) => s.classList.remove("active"));
+        steps[currentStep].classList.add("active");
+        visualContent.innerHTML = stepVisuals[currentStep];
+      }, 3500);
 
-// ── COPY CODE ──
-function copyCode(btn, text) {
-  navigator.clipboard.writeText(text).then(() => {
-    btn.textContent = 'copied!';
-    btn.style.color = 'var(--green)';
-    setTimeout(() => { btn.textContent = 'copy'; btn.style.color = ''; }, 2000);
-  });
-}
-
-// ── GITHUB STARS (live fetch) ──
-async function fetchStars() {
-  try {
-    const r = await fetch('https://api.github.com/repos/your-username/devtasks');
-    if (!r.ok) return;
-    const d = await r.json();
-    if (d.stargazers_count !== undefined) {
-      const fmt = d.stargazers_count >= 1000
-        ? (d.stargazers_count / 1000).toFixed(1) + 'k'
-        : d.stargazers_count;
-      document.querySelectorAll('#star-count, #gh-stars').forEach(el => el.textContent = fmt);
-      if (d.forks_count !== undefined) {
-        const ff = d.forks_count >= 1000
-          ? (d.forks_count / 1000).toFixed(1) + 'k'
-          : d.forks_count;
-        const forkEl = document.getElementById('gh-forks');
-        if (forkEl) forkEl.textContent = ff;
+      // ── COPY CODE ──
+      function copyCode(btn, text) {
+        navigator.clipboard.writeText(text).then(() => {
+          btn.textContent = "copied!";
+          btn.style.color = "var(--green)";
+          setTimeout(() => {
+            btn.textContent = "copy";
+            btn.style.color = "";
+          }, 2000);
+        });
       }
-    }
-  } catch(e) {}
-}
-fetchStars();
-</script>
-</body>
+
+      // ── GITHUB STARS (live fetch) ──
+      async function fetchStars() {
+        try {
+          const r = await fetch("https://api.github.com/repos/amankumar430206/devtasks");
+          if (!r.ok) return;
+          const d = await r.json();
+          if (d.stargazers_count !== undefined) {
+            const fmt = d.stargazers_count >= 1000 ? (d.stargazers_count / 1000).toFixed(1) + "k" : d.stargazers_count;
+            document.querySelectorAll("#star-count, #gh-stars").forEach((el) => (el.textContent = fmt));
+            if (d.forks_count !== undefined) {
+              const ff = d.forks_count >= 1000 ? (d.forks_count / 1000).toFixed(1) + "k" : d.forks_count;
+              const forkEl = document.getElementById("gh-forks");
+              if (forkEl) forkEl.textContent = ff;
+            }
+          }
+        } catch (e) {}
+      }
+      fetchStars();
+    </script>
+  </body>
 </html>
